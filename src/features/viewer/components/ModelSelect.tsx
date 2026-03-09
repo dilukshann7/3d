@@ -66,8 +66,6 @@ export default function ModelSelect({
 }) {
   return (
     <div className="relative h-screen w-screen overflow-auto bg-transparent text-slate-50">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.18),_transparent_35%),radial-gradient(circle_at_85%_15%,_rgba(245,158,11,0.12),_transparent_22%)]" />
-
       <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/55 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-4 sm:px-8 lg:px-10">
           <div className="flex items-center gap-3">
