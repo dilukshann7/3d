@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import type { ThreeEvent } from "@react-three/fiber";
 import {
   ContactShadows,
@@ -155,6 +155,52 @@ function AnimatedModel({
   );
 }
 
+function AutoFrameCamera({
+  frame,
+  controlsRef,
+}: {
+  frame: FrameData;
+  controlsRef: { current: OrbitControlsImpl | null };
+}) {
+  const { camera, size } = useThree();
+
+  useEffect(() => {
+    const controls = controlsRef.current;
+    if (!controls) return;
+
+    const perspectiveCamera = camera as THREE.PerspectiveCamera;
+    const aspect = Math.max(size.width / Math.max(size.height, 1), 0.01);
+    const vFov = THREE.MathUtils.degToRad(perspectiveCamera.fov);
+    const hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
+
+    const halfHeight = Math.max(frame.height * 0.5, 0.35);
+    const halfWidth = Math.max(frame.radius, 0.35);
+    const distForHeight = halfHeight / Math.tan(vFov / 2);
+    const distForWidth = halfWidth / Math.tan(hFov / 2);
+
+    // Keep a small margin so the model fills the screen without clipping.
+    const fitDistance = Math.max(distForHeight, distForWidth) * 1.5;
+    const targetY = Math.max(0.35, frame.centerY);
+    const cameraY = targetY + Math.max(0.35, frame.height * 0.08);
+
+    perspectiveCamera.position.set(0, cameraY, fitDistance);
+    perspectiveCamera.near = 0.02;
+    perspectiveCamera.far = Math.max(60, fitDistance * 8);
+    perspectiveCamera.updateProjectionMatrix();
+
+    const minDistance = Math.max(0.25, frame.radius * 0.22, fitDistance * 0.12);
+    const maxDistance = Math.max(minDistance + 2, fitDistance * 5.5);
+
+    controls.target.set(0, targetY, 0);
+    controls.minDistance = minDistance;
+    controls.maxDistance = maxDistance;
+    controls.update();
+    controls.saveState();
+  }, [camera, controlsRef, frame, size.height, size.width]);
+
+  return null;
+}
+
 export default function ModelViewer({
   model,
   onBack,
@@ -168,12 +214,23 @@ export default function ModelViewer({
   const [playing, setPlaying] = useState(false);
   const [reversed, setReversed] = useState(false);
   const [variantIdx, setVariantIdx] = useState(0);
+  const [frame, setFrame] = useState<FrameData>({
+    height: 2,
+    radius: 1,
+    boundingRadius: 1.35,
+    centerY: 1,
+  });
 
   const glbPath = model.variants[variantIdx].glb;
+  const fov = 34;
 
   const handleAnimationFinish = useCallback(() => {
     setPlaying(false);
     setReversed((v) => !v);
+  }, []);
+
+  const handlePrepared = useCallback((nextFrame: FrameData) => {
+    setFrame(nextFrame);
   }, []);
 
   useEffect(() => {
@@ -206,7 +263,12 @@ export default function ModelViewer({
       >
         <color attach="background" args={["#050816"]} />
         <fog attach="fog" args={["#050816", 10, 24]} />
-        <PerspectiveCamera makeDefault position={[0, 2.2, 7.6]} fov={34} />
+        <PerspectiveCamera
+          makeDefault
+          position={[0, 2, 8]}
+          fov={fov}
+          near={0.02}
+        />
         <ambientLight intensity={0.38} />
         <hemisphereLight args={["#cbd5e1", "#04101f", 0.86]} />
         <spotLight
@@ -239,8 +301,11 @@ export default function ModelViewer({
             playing={playing}
             reversed={reversed}
             onFinish={handleAnimationFinish}
+            onPrepared={handlePrepared}
           />
         </Suspense>
+
+        <AutoFrameCamera frame={frame} controlsRef={controlsRef} />
 
         <ContactShadows
           position={[0, -0.001, 0]}
@@ -258,11 +323,10 @@ export default function ModelViewer({
           autoRotateSpeed={0.45}
           enableDamping
           dampingFactor={0.08}
-          minDistance={3}
-          maxDistance={10}
+          zoomSpeed={1.25}
           minPolarAngle={Math.PI / 3.5}
           maxPolarAngle={Math.PI / 1.75}
-          target={[0, 1.1, 0]}
+          target={[0, 1, 0]}
           makeDefault
         />
       </Canvas>
