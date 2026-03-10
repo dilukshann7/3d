@@ -234,21 +234,15 @@ function AnimatedModel({
     names.forEach((name) => {
       const action = actions[name];
       if (!action) return;
-
       action.setLoop(THREE.LoopOnce, 1);
       action.clampWhenFinished = true;
 
       if (playing) {
         action.timeScale = reversed ? -1 : 1;
-
-        if (reversed && action.time <= 0.001) {
+        if (reversed && action.time <= 0.001)
           action.time = action.getClip().duration;
-        }
-
-        if (!reversed && action.time >= action.getClip().duration - 0.001) {
+        if (!reversed && action.time >= action.getClip().duration - 0.001)
           action.reset();
-        }
-
         action.paused = false;
         if (!action.isRunning()) action.play();
       } else {
@@ -257,7 +251,6 @@ function AnimatedModel({
     });
   }, [playing, reversed, actions, names, glbPath]);
 
-  // Detect completion each frame — reliable for any number of clips
   useFrame(() => {
     if (!playing || !names.length || finishedRef.current) return;
     const allDone = names.every((name) => {
@@ -288,22 +281,25 @@ function AnimatedModel({
   );
 }
 
+// ─── Auto-frame camera ────────────────────────────────────────────────────────
 function AutoFrameCamera({
   frame,
   controlsRef,
+  camRef,
 }: {
   frame: FrameData;
   controlsRef: { current: OrbitControlsImpl | null };
+  camRef: RefObject<THREE.PerspectiveCamera | null>;
 }) {
-  const { camera, size } = useThree();
+  const { size } = useThree();
 
   useEffect(() => {
     const controls = controlsRef.current;
-    if (!controls) return;
+    const cam = camRef.current;
+    if (!controls || !cam) return;
 
-    const perspectiveCamera = camera as THREE.PerspectiveCamera;
     const aspect = Math.max(size.width / Math.max(size.height, 1), 0.01);
-    const vFov = THREE.MathUtils.degToRad(perspectiveCamera.fov);
+    const vFov = THREE.MathUtils.degToRad(cam.fov);
     const hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
 
     const halfHeight = Math.max(frame.height * 0.5, 0.35);
@@ -311,15 +307,14 @@ function AutoFrameCamera({
     const distForHeight = halfHeight / Math.tan(vFov / 2);
     const distForWidth = halfWidth / Math.tan(hFov / 2);
 
-    // Keep a small margin so the model fills the screen without clipping.
     const fitDistance = Math.max(distForHeight, distForWidth) * 1.5;
     const targetY = Math.max(0.35, frame.centerY);
     const cameraY = targetY + Math.max(0.35, frame.height * 0.08);
 
-    perspectiveCamera.position.set(0, cameraY, fitDistance);
-    perspectiveCamera.near = 0.02;
-    perspectiveCamera.far = Math.max(60, fitDistance * 8);
-    perspectiveCamera.updateProjectionMatrix();
+    cam.position.set(0, cameraY, fitDistance);
+    cam.near = 0.02;
+    cam.far = Math.max(60, fitDistance * 8);
+    cam.updateProjectionMatrix();
 
     const minDistance = Math.max(0.25, frame.radius * 0.22, fitDistance * 0.12);
     const maxDistance = Math.max(minDistance + 2, fitDistance * 5.5);
@@ -329,11 +324,150 @@ function AutoFrameCamera({
     controls.maxDistance = maxDistance;
     controls.update();
     controls.saveState();
-  }, [camera, controlsRef, frame, size.height, size.width]);
+  }, [camRef, controlsRef, frame, size.height, size.width]);
 
   return null;
 }
 
+// ─── Post-processing ──────────────────────────────────────────────────────────
+function PostFX() {
+  return (
+    <EffectComposer multisampling={4}>
+      {/* Subtle bloom — only hot specular highlights glow, not the whole scene */}
+      <Bloom
+        intensity={0.45}
+        luminanceThreshold={0.75}
+        luminanceSmoothing={0.35}
+        kernelSize={KernelSize.MEDIUM}
+        blendFunction={BlendFunction.SCREEN}
+      />
+      {/* Very light vignette — frames the scene without darkening it */}
+      <Vignette
+        offset={0.38}
+        darkness={0.38}
+        blendFunction={BlendFunction.NORMAL}
+      />
+    </EffectComposer>
+  );
+}
+
+// ─── Reflective ground ────────────────────────────────────────────────────────
+function ReflectiveGround() {
+  return (
+    <mesh
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, -0.001, 0]}
+      receiveShadow
+    >
+      <planeGeometry args={[30, 30]} />
+      <MeshReflectorMaterial
+        blur={[600, 200]}
+        resolution={512}
+        mixBlur={14}
+        mixStrength={0.25}
+        roughness={1}
+        depthScale={0.6}
+        minDepthThreshold={0.4}
+        maxDepthThreshold={1.4}
+        color="#060c18"
+        metalness={0.2}
+        mirror={0.15}
+      />
+    </mesh>
+  );
+}
+
+// ─── Icon components ──────────────────────────────────────────────────────────
+function PlayIcon() {
+  return (
+    <svg
+      className="h-3.5 w-3.5 shrink-0"
+      fill="currentColor"
+      viewBox="0 0 20 20"
+    >
+      <path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+    </svg>
+  );
+}
+function PauseIcon() {
+  return (
+    <svg
+      className="h-3.5 w-3.5 shrink-0"
+      fill="currentColor"
+      viewBox="0 0 20 20"
+    >
+      <path
+        fillRule="evenodd"
+        d="M6 4a1 1 0 00-1 1v10a1 1 0 102 0V5a1 1 0 00-1-1zm8 0a1 1 0 00-1 1v10a1 1 0 102 0V5a1 1 0 00-1-1z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+function RewindIcon() {
+  return (
+    <svg
+      className="h-3.5 w-3.5 shrink-0"
+      fill="currentColor"
+      viewBox="0 0 20 20"
+    >
+      <path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z" />
+    </svg>
+  );
+}
+function RotateIcon() {
+  return (
+    <svg
+      className="h-3.5 w-3.5 shrink-0"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.8}
+        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+      />
+    </svg>
+  );
+}
+function WireframeIcon() {
+  return (
+    <svg
+      className="h-3.5 w-3.5 shrink-0"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.8}
+        d="M12 3l9 5.5-9 5.5-9-5.5L12 3zm0 0v11m9-5.5v5.5L12 20l-9-5.5V9"
+      />
+    </svg>
+  );
+}
+function ResetIcon() {
+  return (
+    <svg
+      className="h-3.5 w-3.5 shrink-0"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.8}
+        d="M3 12a9 9 0 109-9M3 12V7m0 5H8"
+      />
+    </svg>
+  );
+}
+
+// ─── Main viewer ──────────────────────────────────────────────────────────────
 export default function ModelViewer({
   model,
   onBack,
