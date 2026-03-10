@@ -447,17 +447,6 @@ export default function ModelViewer({
               <ResetIcon /> Reset view
             </button>
           </div>
-
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">
-              Viewer notes
-            </p>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
-              The scene now uses a brighter environment, stronger key light, and
-              contact shadows so the model feels grounded instead of floating in
-              a dark void.
-            </p>
-          </div>
         </div>
       </aside>
     </div>
