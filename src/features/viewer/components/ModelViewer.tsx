@@ -5,6 +5,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type RefObject,
 } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import type { ThreeEvent } from "@react-three/fiber";
@@ -16,7 +17,12 @@ import {
   useProgress,
   useGLTF,
   useAnimations,
+  AdaptiveDpr,
+  AdaptiveEvents,
+  MeshReflectorMaterial,
 } from "@react-three/drei";
+import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
+import { BlendFunction, KernelSize } from "postprocessing";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 import type { ModelConfig } from "../data/models";
@@ -30,26 +36,149 @@ type FrameData = {
   centerY: number;
 };
 
+// ─── Loader ───────────────────────────────────────────────────────────────────
 function Loader() {
   const { progress } = useProgress();
+  const width = Math.round(progress);
   return (
     <Html center>
-      <div className="flex min-w-[13rem] flex-col items-center gap-3 rounded-3xl border border-white/15 bg-slate-950/88 px-7 py-6 shadow-[0_25px_80px_rgba(2,6,23,0.55)] backdrop-blur-xl">
-        <span className="text-sm font-medium text-slate-200">
+      <div className="flex min-w-52 flex-col items-center gap-3 rounded-3xl border border-white/10 bg-slate-950/90 px-7 py-6 shadow-[0_25px_80px_rgba(2,6,23,0.6)] backdrop-blur-xl">
+        <span className="text-sm font-medium tracking-wide text-slate-200">
           Loading model…
         </span>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+        <div className="h-1 w-full overflow-hidden rounded-full bg-white/8">
           <div
-            className="h-full rounded-full bg-sky-300 transition-all duration-300"
-            style={{ width: `${progress}%` }}
+            className="h-full rounded-full bg-sky-400/90 transition-all duration-300"
+            style={{ width: `${width}%` }}
           />
         </div>
-        <span className="text-xs text-slate-400">{Math.round(progress)}%</span>
+        <span className="text-xs tabular-nums text-slate-500">{width}%</span>
       </div>
     </Html>
   );
 }
 
+// ─── Glass detection ──────────────────────────────────────────────────────────
+function looksLikeGlass(
+  mesh: THREE.Mesh,
+  mat: THREE.Material & Partial<THREE.MeshStandardMaterial>,
+): boolean {
+  if (mat.transparent && (mat.opacity ?? 1) < 0.95) return true;
+
+  const namesToCheck = [mesh.name, mat.name, mesh.parent?.name ?? ""].map((n) =>
+    n.toLowerCase(),
+  );
+  const glassKeywords = [
+    "glass",
+    "window",
+    "vitr",
+    "panel",
+    "roof",
+    "toit",
+    "glazing",
+    "crystal",
+    "transparent",
+  ];
+  if (namesToCheck.some((n) => glassKeywords.some((k) => n.includes(k))))
+    return true;
+
+  const color = (mat as THREE.MeshStandardMaterial).color;
+  if (color) {
+    const { r, g, b } = color;
+    const isLightBlue = b > 0.55 && b > r * 1.15 && b > g * 0.85 && r > 0.45;
+    const isNearWhite = r > 0.75 && g > 0.75 && b > 0.75;
+    const isCyan = b > 0.5 && g > 0.5 && r < 0.6;
+    if (isLightBlue || isNearWhite || isCyan) return true;
+  }
+
+  return false;
+}
+
+// ─── Material upgrade ─────────────────────────────────────────────────────────
+function makeReflective(root: THREE.Object3D) {
+  root.traverse((child) => {
+    const mesh = child as THREE.Mesh;
+    if (!mesh.isMesh) return;
+
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+
+    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    const upgraded = mats.map((mat) => {
+      const old = mat as THREE.MeshStandardMaterial &
+        THREE.MeshBasicMaterial &
+        THREE.MeshPhysicalMaterial;
+
+      if (old.isMeshPhysicalMaterial) {
+        const isGlass = looksLikeGlass(mesh, old);
+        if (isGlass) {
+          old.color = new THREE.Color(0xffffff);
+          old.metalness = 0;
+          old.roughness = 0;
+          old.transmission = 0.94;
+          old.thickness = 0.4;
+          old.ior = 1.52;
+          old.reflectivity = 1;
+          old.clearcoat = 1;
+          old.clearcoatRoughness = 0;
+          old.envMapIntensity = 3;
+          old.transparent = true;
+          old.opacity = 1;
+        } else {
+          old.envMapIntensity = 1.2;
+          old.roughness = Math.min(old.roughness, 0.55);
+          old.metalness = Math.max(old.metalness, 0.3);
+          old.reflectivity = 0.5;
+          old.clearcoat = 0.1;
+          old.clearcoatRoughness = 0.3;
+        }
+        old.needsUpdate = true;
+        return old;
+      }
+
+      const color =
+        (old.color as THREE.Color | undefined) ?? new THREE.Color(0xffffff);
+      const map = old.map ?? null;
+      const isGlass = looksLikeGlass(mesh, old);
+
+      const physical = isGlass
+        ? new THREE.MeshPhysicalMaterial({
+            color: new THREE.Color(0xffffff),
+            map: null,
+            metalness: 0,
+            roughness: 0,
+            transmission: 0.94,
+            thickness: 0.4,
+            ior: 1.52,
+            reflectivity: 1,
+            envMapIntensity: 3,
+            clearcoat: 1,
+            clearcoatRoughness: 0,
+            transparent: true,
+            opacity: 1,
+            side: THREE.DoubleSide,
+          })
+        : new THREE.MeshPhysicalMaterial({
+            color,
+            map,
+            metalness: 0.45,
+            roughness: 0.42,
+            reflectivity: 0.4,
+            envMapIntensity: 1.1,
+            clearcoat: 0.12,
+            clearcoatRoughness: 0.35,
+            transparent: false,
+            side: old.side ?? THREE.FrontSide,
+          });
+
+      return physical;
+    });
+
+    mesh.material = upgraded.length === 1 ? upgraded[0] : upgraded;
+  });
+}
+
+// ─── Animated model ───────────────────────────────────────────────────────────
 function AnimatedModel({
   glbPath,
   wireframe,
@@ -70,6 +199,10 @@ function AnimatedModel({
   const prepared = useMemo(() => prepareModelScene(scene, 3.5), [scene]);
   const { actions, names } = useAnimations(animations, group);
   const finishedRef = useRef(false);
+
+  useEffect(() => {
+    makeReflective(prepared.root);
+  }, [prepared.root]);
 
   useEffect(() => {
     onPrepared({
