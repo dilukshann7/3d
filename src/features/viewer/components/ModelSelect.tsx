@@ -65,48 +65,49 @@ export default function ModelSelect({
   onSelect: (m: ModelConfig) => void;
 }) {
   return (
-    <div className="relative h-screen w-screen overflow-auto bg-transparent text-slate-50">
-      <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/55 backdrop-blur-xl">
+    <div className="relative h-screen w-screen overflow-auto bg-slate-50 text-slate-900">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_0%,rgba(14,165,233,0.1),transparent_28%),radial-gradient(circle_at_90%_100%,rgba(37,99,235,0.08),transparent_30%)]" />
+
+      <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/85 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-4 sm:px-8 lg:px-10">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-white/8 shadow-[0_12px_32px_rgba(15,23,42,0.35)]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-300 bg-white shadow-sm">
               <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
                 <path
                   d="M7 1L13 4.5V9.5L7 13L1 9.5V4.5L7 1Z"
-                  stroke="#e2e8f0"
+                  stroke="#0f172a"
                   strokeWidth="1.4"
                   strokeLinejoin="round"
                 />
               </svg>
             </div>
             <div>
-              <p className="font-[Sora] text-base font-semibold tracking-tight text-white">
-                Atelier Viewer
+              <p className="font-[IBM_Plex_Sans] text-base font-semibold tracking-tight text-slate-900">
+                Product Model Library
               </p>
-              <p className="text-xs tracking-[0.24em] text-slate-400 uppercase">
-                Curated 3D presentations
+              <p className="text-xs tracking-[0.24em] text-slate-500 uppercase">
+                Interactive previews
               </p>
             </div>
           </div>
 
-          <div className="hidden rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-300 sm:block">
-            Interactive catalog
+          <div className="hidden rounded-full border border-slate-300 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-600 sm:block">
+            6 models available
           </div>
         </div>
       </header>
 
       <main className="relative mx-auto flex min-h-[calc(100vh-73px)] w-full max-w-7xl flex-col justify-center px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
         <div className="mb-10 max-w-3xl">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.34em] text-sky-200/70">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.34em] text-slate-500">
             Select a model
           </p>
-          <h1 className="font-[Sora] text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Present the collection with depth, contrast, and clear hierarchy.
+          <h1 className="font-[IBM_Plex_Sans] text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
+            Simple, modern 3D product browsing.
           </h1>
-          <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
-            Each configuration now previews inside a lit studio card instead of
-            a flat dark block, so the form reads before you even open the full
-            viewer.
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
+            Compare the full range, open any model instantly, and review form,
+            scale, and animation in a clean studio viewer.
           </p>
         </div>
 
@@ -115,20 +116,20 @@ export default function ModelSelect({
             <button
               key={model.id}
               onClick={() => onSelect(model)}
-              className="group relative overflow-hidden rounded-[32px] border border-white/12 bg-slate-950/55 text-left shadow-[0_30px_80px_rgba(2,6,23,0.48)] transition duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-slate-950/72 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/60"
+              className="group relative overflow-hidden rounded-[24px] border border-slate-200 bg-white text-left shadow-[0_18px_45px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-1 hover:border-slate-300 hover:shadow-[0_22px_60px_rgba(15,23,42,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
               style={{
-                backgroundImage: `linear-gradient(180deg, rgba(2,6,23,0.18), rgba(2,6,23,0.86)), radial-gradient(circle at top right, ${model.accent}30, transparent 32%)`,
+                backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.96)), radial-gradient(circle at top right, ${model.accent}22, transparent 34%)`,
               }}
             >
-              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/45 to-transparent opacity-70" />
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent opacity-80" />
               <div className="grid min-h-[25rem] grid-cols-1 lg:grid-cols-[1.1fr_0.9fr]">
-                <div className="relative min-h-[18rem] border-b border-white/10 lg:min-h-full lg:border-b-0 lg:border-r">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_15%,_rgba(255,255,255,0.12),_transparent_28%)]" />
+                <div className="relative min-h-[18rem] border-b border-slate-200 lg:min-h-full lg:border-b-0 lg:border-r">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_15%,_rgba(37,99,235,0.10),_transparent_30%)]" />
                   <div
-                    className="absolute left-6 top-6 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/80"
+                    className="absolute left-6 top-6 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-700"
                     style={{
-                      backgroundColor: `${model.accent}22`,
-                      border: `1px solid ${model.accent}44`,
+                      backgroundColor: "rgba(15,23,42,0.05)",
+                      border: "1px solid rgba(148,163,184,0.35)",
                     }}
                   >
                     {model.subtitle}
@@ -159,10 +160,10 @@ export default function ModelSelect({
                   <div>
                     <div className="mb-4 flex items-start justify-between gap-4">
                       <div>
-                        <h2 className="font-[Sora] text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                        <h2 className="font-[IBM_Plex_Sans] text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
                           {model.name}
                         </h2>
-                        <p className="mt-2 max-w-md text-sm leading-7 text-slate-300">
+                        <p className="mt-2 max-w-md text-sm leading-7 text-slate-600">
                           {model.description}
                         </p>
                       </div>
@@ -170,7 +171,7 @@ export default function ModelSelect({
                         className="mt-1 hidden h-3 w-3 shrink-0 rounded-full sm:block"
                         style={{
                           backgroundColor: model.accent,
-                          boxShadow: `0 0 18px ${model.accent}`,
+                          boxShadow: `0 0 14px ${model.accent}`,
                         }}
                       />
                     </div>
@@ -179,27 +180,27 @@ export default function ModelSelect({
                       {model.variants.map((variant) => (
                         <span
                           key={variant.label}
-                          className="rounded-full border border-white/12 bg-white/6 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-200"
+                          className="rounded-full border border-slate-300 bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-700"
                         >
                           {variant.label}
                         </span>
                       ))}
-                      <span className="rounded-full border border-white/12 bg-white/6 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-200">
-                        Studio lighting
+                      <span className="rounded-full border border-slate-300 bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-700">
+                        Studio preview
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between gap-4 border-t border-white/10 pt-5">
+                  <div className="flex items-center justify-between gap-4 border-t border-slate-200 pt-5">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">
                         Open viewer
                       </p>
-                      <p className="mt-1 text-sm text-slate-300">
-                        Orbit, zoom, inspect materials and run the animation.
+                      <p className="mt-1 text-sm text-slate-600">
+                        Orbit, zoom, inspect materials, and review animation.
                       </p>
                     </div>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/12 bg-white/8 text-white transition duration-300 group-hover:translate-x-1 group-hover:bg-white/14">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-300 bg-white text-slate-700 transition duration-300 group-hover:translate-x-1 group-hover:border-blue-400 group-hover:text-blue-600">
                       <svg
                         className="h-4 w-4"
                         fill="none"
