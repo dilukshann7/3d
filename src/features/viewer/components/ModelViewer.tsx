@@ -342,6 +342,7 @@ export default function ModelViewer({
   onBack: () => void;
 }) {
   const controlsRef = useRef<OrbitControlsImpl>(null);
+  const camRef = useRef<THREE.PerspectiveCamera>(null);
   const [autoRotate, setAutoRotate] = useState(true);
   const [wireframe, setWireframe] = useState(false);
   const [playing, setPlaying] = useState(false);
