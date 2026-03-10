@@ -72,10 +72,18 @@ export function prepareModelScene(source: THREE.Object3D, targetSize = 3) {
   box.setFromObject(root);
   const groundedSize = new THREE.Vector3();
   box.getSize(groundedSize);
+  const groundedCenter = new THREE.Vector3();
+  box.getCenter(groundedCenter);
+
+  const radius = Math.max(groundedSize.x, groundedSize.z) / 2;
+  const halfHeight = groundedSize.y / 2;
+  const boundingRadius = Math.sqrt(radius * radius + halfHeight * halfHeight);
 
   return {
     root,
     height: groundedSize.y,
-    radius: Math.max(groundedSize.x, groundedSize.z) / 2,
+    radius,
+    boundingRadius,
+    centerY: groundedCenter.y,
   };
 }
