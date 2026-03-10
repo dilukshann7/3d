@@ -14,12 +14,24 @@ import StudioEnvironment from "./StudioEnvironment";
 function PreviewScene({ glb, accent }: { glb: string; accent: string }) {
   const { scene } = useGLTF(glb);
   const prepared = useMemo(() => prepareModelScene(scene, 2.45), [scene]);
+  const fov = 36;
+  const fovRad = (fov * Math.PI) / 180;
+  const distance = Math.max(
+    2.8,
+    (prepared.boundingRadius * 1.35) / Math.sin(fovRad / 2),
+  );
+  const targetY = Math.max(0.4, prepared.centerY);
+  const cameraY = targetY + Math.max(0.7, prepared.height * 0.22);
 
   return (
     <group>
       <color attach="background" args={["#f8fafc"]} />
       <fog attach="fog" args={["#f1f5f9", 6, 12]} />
-      <PerspectiveCamera makeDefault position={[0, 1.8, 4.75]} fov={36} />
+      <PerspectiveCamera
+        makeDefault
+        position={[0, cameraY, distance]}
+        fov={fov}
+      />
       <ambientLight intensity={0.66} />
       <hemisphereLight args={["#ffffff", "#e2e8f0", 0.75]} />
       <spotLight
@@ -54,6 +66,15 @@ function PreviewScene({ glb, accent }: { glb: string; accent: string }) {
         far={4}
         resolution={512}
         color="#94a3b8"
+      />
+      <OrbitControls
+        autoRotate
+        autoRotateSpeed={1.15}
+        enableZoom={false}
+        enablePan={false}
+        minPolarAngle={Math.PI / 2.2}
+        maxPolarAngle={Math.PI / 1.9}
+        target={[0, targetY, 0]}
       />
     </group>
   );
@@ -145,14 +166,6 @@ export default function ModelSelect({
                         accent={model.accent}
                       />
                     </Suspense>
-                    <OrbitControls
-                      autoRotate
-                      autoRotateSpeed={1.15}
-                      enableZoom={false}
-                      enablePan={false}
-                      minPolarAngle={Math.PI / 2.2}
-                      maxPolarAngle={Math.PI / 1.9}
-                    />
                   </Canvas>
                 </div>
 
