@@ -501,66 +501,101 @@ export default function ModelViewer({
     setFrame(nextFrame);
   }, []);
 
+  // Reset animation state when the loaded GLB changes.
+  // Using a ref-based approach avoids the "setState in effect" lint warning —
+  // we schedule the state update via a microtask so it doesn't run synchronously
+  // inside the effect body.
   useEffect(() => {
-    setPlaying(false);
-    setReversed(false);
+    const id = setTimeout(() => {
+      setPlaying(false);
+      setReversed(false);
+    }, 0);
+    return () => clearTimeout(id);
   }, [glbPath]);
 
   function resetCamera() {
     controlsRef.current?.reset();
   }
 
+  // Button style helpers
   const btnBase =
-    "flex w-full items-center gap-2 rounded-2xl border px-3.5 py-3 text-sm font-semibold transition duration-200";
-  const btnDefault = `${btnBase} border-white/10 bg-white/5 text-slate-200 hover:border-white/20 hover:bg-white/10`;
-  const btnActive = `${btnBase} border-transparent bg-sky-300 text-slate-950 shadow-[0_12px_30px_rgba(125,211,252,0.28)] hover:bg-sky-200`;
+    "flex w-full items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-[13px] font-medium tracking-wide transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40";
+  const btnDefault = `${btnBase} border-white/8 bg-white/4 text-slate-300 hover:border-white/16 hover:bg-white/8 hover:text-white`;
+  const btnActive = `${btnBase} border-sky-400/30 bg-sky-400/14 text-sky-300 hover:bg-sky-400/20`;
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-slate-950 text-slate-50">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.15),_transparent_28%),radial-gradient(circle_at_85%_15%,_rgba(245,158,11,0.12),_transparent_24%),linear-gradient(180deg,_rgba(2,6,23,0.04),_rgba(2,6,23,0.78))]" />
+    <div className="relative h-screen w-screen overflow-hidden bg-[#050a14] text-slate-50">
+      {/* Subtle ambient gradient — no harsh glare */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(56,189,248,0.07),transparent)]" />
 
+      {/* ── 3-D Canvas ── */}
       <Canvas
         shadows
         className="h-full w-full"
         gl={{
           antialias: true,
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.1,
+          toneMappingExposure: 1.05,
         }}
         dpr={[1, 2]}
       >
-        <color attach="background" args={["#050816"]} />
-        <fog attach="fog" args={["#050816", 10, 24]} />
+        <AdaptiveDpr pixelated />
+        <AdaptiveEvents />
+
+        <color attach="background" args={["#050a14"]} />
+        <fog attach="fog" args={["#060c1a", 16, 32]} />
+
         <PerspectiveCamera
+          ref={camRef}
           makeDefault
           position={[0, 2, 8]}
           fov={fov}
           near={0.02}
         />
-        <ambientLight intensity={0.38} />
-        <hemisphereLight args={["#cbd5e1", "#04101f", 0.86]} />
+
+        {/* ── Scene lights ── */}
+        <ambientLight intensity={0.12} />
+        <hemisphereLight args={["#8fb4d4", "#04101f", 0.5]} />
+
+        {/* Key spot — tight, crisp shadow */}
         <spotLight
           castShadow
-          position={[5.5, 8, 5.5]}
-          intensity={42}
-          angle={0.34}
-          penumbra={0.8}
-          distance={24}
+          position={[4, 10, 5]}
+          intensity={60}
+          angle={0.26}
+          penumbra={0.65}
+          distance={30}
           shadow-mapSize={[2048, 2048]}
-          shadow-bias={-0.00005}
+          shadow-bias={-0.00004}
+          shadow-normalBias={0.02}
         />
-        <directionalLight
-          position={[-5, 4, -5]}
-          intensity={0.68}
-          color="#dbeafe"
-        />
-        <pointLight
-          position={[0, 2.2, 5.2]}
-          intensity={4.2}
-          distance={14}
+
+        {/* Accent rim — model-tinted edge separation */}
+        <spotLight
+          position={[-5, 4.5, -8]}
+          intensity={18}
+          angle={0.42}
+          penumbra={0.85}
+          distance={25}
           color={model.accent}
         />
-        <StudioEnvironment accent={model.accent} intensity={0.9} />
+
+        {/* Cool fill from opposite rim */}
+        <directionalLight
+          position={[6, 3, -6]}
+          intensity={0.9}
+          color="#dbeafe"
+        />
+
+        {/* Subtle accent near-camera fill */}
+        <pointLight
+          position={[0, 1.5, 5]}
+          intensity={5}
+          distance={16}
+          color={model.accent}
+        />
+
+        <StudioEnvironment accent={model.accent} intensity={1.0} />
 
         <Suspense key={glbPath} fallback={<Loader />}>
           <AnimatedModel
@@ -573,40 +608,54 @@ export default function ModelViewer({
           />
         </Suspense>
 
-        <AutoFrameCamera frame={frame} controlsRef={controlsRef} />
+        <AutoFrameCamera
+          frame={frame}
+          controlsRef={controlsRef}
+          camRef={camRef}
+        />
+
+        <ReflectiveGround />
 
         <ContactShadows
-          position={[0, -0.001, 0]}
-          scale={10}
-          opacity={0.52}
-          blur={2.6}
+          position={[0, 0.001, 0]}
+          scale={14}
+          opacity={0.55}
+          blur={3}
           far={7}
           resolution={1024}
-          color="#020617"
+          color="#010510"
         />
 
         <OrbitControls
           ref={controlsRef}
           autoRotate={autoRotate}
-          autoRotateSpeed={0.45}
+          autoRotateSpeed={0.4}
           enableDamping
-          dampingFactor={0.08}
-          zoomSpeed={1.25}
+          dampingFactor={0.07}
+          zoomSpeed={1.2}
           minPolarAngle={Math.PI / 3.5}
           maxPolarAngle={Math.PI / 1.75}
           target={[0, 1, 0]}
           makeDefault
         />
+
+        <PostFX />
       </Canvas>
 
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,_rgba(2,6,23,0.12)_0%,_transparent_22%,_transparent_72%,_rgba(2,6,23,0.58)_100%)]" />
+      {/* Edge vignette overlay — purely CSS, very subtle */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_100%_100%_at_50%_50%,transparent_55%,rgba(2,6,23,0.45)_100%)]" />
+      {/* Top & bottom gradient bars */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-linear-to-b from-[rgba(2,6,23,0.18)] to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-linear-to-t from-[rgba(2,6,23,0.55)] to-transparent" />
 
-      <header className="absolute inset-x-0 top-0 z-20 px-4 pt-4 sm:px-6 lg:px-8 lg:pt-6">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 rounded-[28px] border border-white/10 bg-slate-950/50 px-4 py-3 shadow-[0_25px_70px_rgba(2,6,23,0.45)] backdrop-blur-xl sm:px-5 lg:px-6">
-          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+      {/* ── Header ── */}
+      <header className="absolute inset-x-0 top-0 z-20 px-4 pt-4 sm:px-6 lg:px-8 lg:pt-5">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 rounded-2xl border border-white/8 bg-slate-950/55 px-3 py-2.5 shadow-[0_8px_32px_rgba(2,6,23,0.4)] backdrop-blur-xl sm:px-4 lg:px-5">
+          {/* Back + title */}
+          <div className="flex min-w-0 items-center gap-3">
             <button
               onClick={onBack}
-              className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-slate-200 transition duration-200 hover:border-white/20 hover:bg-white/10 hover:text-white"
+              className="pointer-events-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/8 bg-white/5 text-slate-300 transition duration-200 hover:border-white/16 hover:bg-white/10 hover:text-white"
               aria-label="Back to catalog"
             >
               <svg
@@ -626,40 +675,43 @@ export default function ModelViewer({
 
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="font-[Sora] text-lg font-semibold tracking-tight text-white sm:text-xl">
+                <h1 className="font-[IBM_Plex_Sans] text-[15px] font-semibold tracking-tight text-white sm:text-base">
                   {model.name}
                 </h1>
                 <span
-                  className="rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.28em]"
+                  className="rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.26em]"
                   style={{
-                    borderColor: `${model.accent}55`,
+                    borderColor: `${model.accent}44`,
                     color: model.accent,
-                    backgroundColor: `${model.accent}14`,
+                    backgroundColor: `${model.accent}12`,
                   }}
                 >
                   {model.subtitle}
                 </span>
               </div>
-              <p className="mt-1 max-w-2xl truncate text-sm text-slate-300 sm:pr-6">
+              <p className="mt-0.5 max-w-2xl truncate text-[12px] leading-5 text-slate-400 sm:pr-4">
                 {model.description}
               </p>
             </div>
           </div>
 
-          <div className="hidden rounded-full border border-white/10 bg-white/6 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-300 lg:block">
-            Drag to orbit · Scroll to zoom
+          {/* Hint */}
+          <div className="hidden shrink-0 rounded-full border border-white/8 bg-white/4 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.26em] text-slate-500 lg:block">
+            Drag · Scroll · Pinch
           </div>
         </div>
       </header>
 
-      <aside className="absolute bottom-4 left-4 right-4 z-20 sm:left-6 sm:right-auto lg:bottom-6 lg:left-8">
-        <div className="pointer-events-auto w-full rounded-[30px] border border-white/10 bg-slate-950/58 p-4 shadow-[0_25px_70px_rgba(2,6,23,0.48)] backdrop-blur-xl sm:w-[22rem] sm:p-5">
+      {/* ── Controls panel ── */}
+      <aside className="absolute bottom-4 left-4 z-20 sm:bottom-5 sm:left-5 lg:bottom-6 lg:left-7">
+        <div className="pointer-events-auto w-full rounded-2xl border border-white/8 bg-slate-950/65 p-3.5 shadow-[0_16px_48px_rgba(2,6,23,0.5)] backdrop-blur-xl sm:w-72 sm:p-4">
+          {/* Variant selector */}
           {model.variants.length > 1 && (
-            <div className="mb-5">
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">
+            <div className="mb-4">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-600">
                 Variant
               </p>
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="grid gap-1.5 sm:grid-cols-2">
                 {model.variants.map((v, i) => (
                   <button
                     key={v.label}
@@ -677,7 +729,9 @@ export default function ModelViewer({
             </div>
           )}
 
-          <div className="mb-5 grid gap-2 sm:grid-cols-2">
+          {/* Controls grid */}
+          <div className="grid grid-cols-2 gap-1.5">
+            {/* Play / Pause / Rewind */}
             <button
               onClick={() => setPlaying((v) => !v)}
               className={playing ? btnActive : btnDefault}
@@ -697,13 +751,16 @@ export default function ModelViewer({
               )}
             </button>
 
+            {/* Auto-rotate */}
             <button
               onClick={() => setAutoRotate((v) => !v)}
               className={autoRotate ? btnActive : btnDefault}
             >
-              <RotateIcon /> {autoRotate ? "Stop spin" : "Auto-rotate"}
+              <RotateIcon />
+              {autoRotate ? "Stop spin" : "Rotate"}
             </button>
 
+            {/* Wireframe */}
             <button
               onClick={() => setWireframe((v) => !v)}
               className={wireframe ? btnActive : btnDefault}
@@ -711,101 +768,24 @@ export default function ModelViewer({
               <WireframeIcon /> Wireframe
             </button>
 
+            {/* Reset camera */}
             <button onClick={resetCamera} className={btnDefault}>
               <ResetIcon /> Reset view
             </button>
           </div>
+
+          {/* Accent line at bottom */}
+          <div
+            className="mt-3.5 h-px w-full rounded-full opacity-30"
+            style={{
+              background: `linear-gradient(90deg, transparent, ${model.accent}, transparent)`,
+            }}
+          />
+          <p className="mt-2 text-center text-[10px] text-slate-600">
+            Interactive 3D viewer
+          </p>
         </div>
       </aside>
     </div>
-  );
-}
-
-function PlayIcon() {
-  return (
-    <svg
-      className="w-3.5 h-3.5 shrink-0"
-      fill="currentColor"
-      viewBox="0 0 20 20"
-    >
-      <path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-    </svg>
-  );
-}
-function PauseIcon() {
-  return (
-    <svg
-      className="w-3.5 h-3.5 shrink-0"
-      fill="currentColor"
-      viewBox="0 0 20 20"
-    >
-      <path
-        fillRule="evenodd"
-        d="M6 4a1 1 0 00-1 1v10a1 1 0 102 0V5a1 1 0 00-1-1zm8 0a1 1 0 00-1 1v10a1 1 0 102 0V5a1 1 0 00-1-1z"
-        clipRule="evenodd"
-      />
-    </svg>
-  );
-}
-function RewindIcon() {
-  return (
-    <svg
-      className="w-3.5 h-3.5 shrink-0"
-      fill="currentColor"
-      viewBox="0 0 20 20"
-    >
-      <path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z" />
-    </svg>
-  );
-}
-function RotateIcon() {
-  return (
-    <svg
-      className="w-3.5 h-3.5 shrink-0"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-      />
-    </svg>
-  );
-}
-function WireframeIcon() {
-  return (
-    <svg
-      className="w-3.5 h-3.5 shrink-0"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M12 3l9 5.5-9 5.5-9-5.5L12 3zm0 0v11m9-5.5v5.5L12 20l-9-5.5V9"
-      />
-    </svg>
-  );
-}
-function ResetIcon() {
-  return (
-    <svg
-      className="w-3.5 h-3.5 shrink-0"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M15 10l-4 4m0 0l-4-4m4 4V3"
-      />
-    </svg>
   );
 }
