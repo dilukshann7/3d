@@ -17,22 +17,22 @@ function PreviewScene({ glb, accent }: { glb: string; accent: string }) {
 
   return (
     <group>
-      <color attach="background" args={["#08111f"]} />
-      <fog attach="fog" args={["#08111f", 6, 12]} />
+      <color attach="background" args={["#f8fafc"]} />
+      <fog attach="fog" args={["#f1f5f9", 6, 12]} />
       <PerspectiveCamera makeDefault position={[0, 1.8, 4.75]} fov={36} />
-      <ambientLight intensity={0.48} />
-      <hemisphereLight args={["#cbd5e1", "#08111f", 0.72]} />
+      <ambientLight intensity={0.66} />
+      <hemisphereLight args={["#ffffff", "#e2e8f0", 0.75]} />
       <spotLight
         position={[3.2, 5, 4.5]}
-        intensity={34}
+        intensity={26}
         angle={0.34}
         penumbra={0.7}
         distance={20}
       />
       <directionalLight
         position={[-4, 4, -2]}
-        intensity={0.72}
-        color="#dbeafe"
+        intensity={0.66}
+        color="#ffffff"
       />
       <pointLight
         position={[0, 1.4, 4]}
@@ -49,11 +49,11 @@ function PreviewScene({ glb, accent }: { glb: string; accent: string }) {
       <ContactShadows
         position={[0, -0.001, 0]}
         scale={6}
-        opacity={0.55}
+        opacity={0.32}
         blur={2.5}
         far={4}
         resolution={512}
-        color="#020617"
+        color="#94a3b8"
       />
     </group>
   );
