@@ -23,6 +23,13 @@ import type { ModelConfig } from "../data/models";
 import { prepareModelScene } from "../utils/modelScene";
 import StudioEnvironment from "./StudioEnvironment";
 
+type FrameData = {
+  height: number;
+  radius: number;
+  boundingRadius: number;
+  centerY: number;
+};
+
 function Loader() {
   const { progress } = useProgress();
   return (
@@ -49,18 +56,29 @@ function AnimatedModel({
   playing,
   reversed,
   onFinish,
+  onPrepared,
 }: {
   glbPath: string;
   wireframe: boolean;
   playing: boolean;
   reversed: boolean;
   onFinish: () => void;
+  onPrepared: (frame: FrameData) => void;
 }) {
   const group = useRef<THREE.Group>(null);
   const { scene, animations } = useGLTF(glbPath);
   const prepared = useMemo(() => prepareModelScene(scene, 3.5), [scene]);
   const { actions, names } = useAnimations(animations, group);
   const finishedRef = useRef(false);
+
+  useEffect(() => {
+    onPrepared({
+      height: prepared.height,
+      radius: prepared.radius,
+      boundingRadius: prepared.boundingRadius,
+      centerY: prepared.centerY,
+    });
+  }, [onPrepared, prepared]);
 
   useEffect(() => {
     prepared.root.traverse((child) => {
