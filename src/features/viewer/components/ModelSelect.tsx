@@ -87,14 +87,11 @@ export default function ModelSelect({
 }) {
   return (
     <div className="relative h-screen w-screen overflow-auto bg-slate-50 text-slate-900">
-      {/* Ambient background gradients */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_0%,rgba(14,165,233,0.09),transparent_28%),radial-gradient(circle_at_90%_100%,rgba(37,99,235,0.07),transparent_30%)]" />
 
-      {/* ── Header ── */}
       <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/88 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-3.5 sm:px-8 lg:px-10">
           <div className="flex items-center gap-3">
-            {/* Logo mark */}
             <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white shadow-sm">
               <svg width="15" height="15" viewBox="0 0 14 14" fill="none">
                 <path
@@ -121,9 +118,7 @@ export default function ModelSelect({
         </div>
       </header>
 
-      {/* ── Main content ── */}
       <main className="relative mx-auto flex min-h-[calc(100vh-57px)] w-full max-w-7xl flex-col justify-center px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
-        {/* Hero copy */}
         <div className="mb-10 max-w-3xl">
           <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.36em] text-slate-400">
             Select a model
@@ -137,7 +132,6 @@ export default function ModelSelect({
           </p>
         </div>
 
-        {/* ── Model grid ── */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           {MODELS.map((model) => (
             <button
@@ -148,16 +142,12 @@ export default function ModelSelect({
                 backgroundImage: `radial-gradient(circle at top right, ${model.accent}18, transparent 38%)`,
               }}
             >
-              {/* Top shimmer line */}
               <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-slate-200 to-transparent" />
 
               <div className="grid min-h-100 grid-cols-1 lg:grid-cols-[1.1fr_0.9fr]">
-                {/* ── 3-D preview pane ── */}
                 <div className="relative min-h-72 border-b border-slate-100 lg:min-h-full lg:border-b-0 lg:border-r lg:border-slate-100">
-                  {/* Soft inner glow */}
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_15%,rgba(37,99,235,0.07),transparent_32%)]" />
 
-                  {/* Subtitle badge */}
                   <div
                     className="absolute left-5 top-5 z-10 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-600"
                     style={{
@@ -168,7 +158,6 @@ export default function ModelSelect({
                     {model.subtitle}
                   </div>
 
-                  {/* Accent glow blob */}
                   <div
                     className="absolute bottom-5 left-5 h-16 w-16 rounded-full blur-3xl"
                     style={{ backgroundColor: `${model.accent}44` }}
@@ -184,10 +173,8 @@ export default function ModelSelect({
                   </Canvas>
                 </div>
 
-                {/* ── Info pane ── */}
                 <div className="flex flex-col justify-between gap-6 p-6 sm:p-7">
                   <div>
-                    {/* Name + accent dot */}
                     <div className="mb-4 flex items-start justify-between gap-4">
                       <div>
                         <h2 className="font-[IBM_Plex_Sans] text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
@@ -206,7 +193,6 @@ export default function ModelSelect({
                       />
                     </div>
 
-                    {/* Variant pills */}
                     <div className="flex flex-wrap gap-1.5">
                       {model.variants.map((variant) => (
                         <span
@@ -222,7 +208,6 @@ export default function ModelSelect({
                     </div>
                   </div>
 
-                  {/* CTA row */}
                   <div className="flex items-center justify-between gap-4 border-t border-slate-100 pt-5">
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-400">

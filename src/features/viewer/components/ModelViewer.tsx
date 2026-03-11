@@ -36,7 +36,6 @@ type FrameData = {
   centerY: number;
 };
 
-// ─── Loader ───────────────────────────────────────────────────────────────────
 function Loader() {
   const { progress } = useProgress();
   const width = Math.round(progress);
@@ -281,7 +280,6 @@ function AnimatedModel({
   );
 }
 
-// ─── Auto-frame camera ────────────────────────────────────────────────────────
 function AutoFrameCamera({
   frame,
   controlsRef,
@@ -329,19 +327,16 @@ function AutoFrameCamera({
   return null;
 }
 
-// ─── Post-processing ──────────────────────────────────────────────────────────
 function PostFX() {
   return (
     <EffectComposer multisampling={4}>
-      {/* Subtle bloom — only hot specular highlights glow, not the whole scene */}
       <Bloom
-        intensity={0.45}
-        luminanceThreshold={0.75}
-        luminanceSmoothing={0.35}
-        kernelSize={KernelSize.MEDIUM}
+        intensity={0.18}
+        luminanceThreshold={0.92}
+        luminanceSmoothing={0.6}
+        kernelSize={KernelSize.SMALL}
         blendFunction={BlendFunction.SCREEN}
       />
-      {/* Very light vignette — frames the scene without darkening it */}
       <Vignette
         offset={0.38}
         darkness={0.38}
@@ -351,33 +346,25 @@ function PostFX() {
   );
 }
 
-// ─── Reflective ground ────────────────────────────────────────────────────────
-function ReflectiveGround() {
+function CementFloor() {
   return (
     <mesh
       rotation={[-Math.PI / 2, 0, 0]}
       position={[0, -0.001, 0]}
       receiveShadow
     >
-      <planeGeometry args={[30, 30]} />
-      <MeshReflectorMaterial
-        blur={[600, 200]}
-        resolution={512}
-        mixBlur={14}
-        mixStrength={0.25}
+      <planeGeometry args={[60, 60]} />
+      <meshPhysicalMaterial
+        color="#080808"
+        metalness={0}
         roughness={1}
-        depthScale={0.6}
-        minDepthThreshold={0.4}
-        maxDepthThreshold={1.4}
-        color="#060c18"
-        metalness={0.2}
-        mirror={0.15}
+        reflectivity={0}
+        envMapIntensity={0}
       />
     </mesh>
   );
 }
 
-// ─── Icon components ──────────────────────────────────────────────────────────
 function PlayIcon() {
   return (
     <svg
@@ -501,10 +488,6 @@ export default function ModelViewer({
     setFrame(nextFrame);
   }, []);
 
-  // Reset animation state when the loaded GLB changes.
-  // Using a ref-based approach avoids the "setState in effect" lint warning —
-  // we schedule the state update via a microtask so it doesn't run synchronously
-  // inside the effect body.
   useEffect(() => {
     const id = setTimeout(() => {
       setPlaying(false);
@@ -517,7 +500,6 @@ export default function ModelViewer({
     controlsRef.current?.reset();
   }
 
-  // Button style helpers
   const btnBase =
     "flex w-full items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-[13px] font-medium tracking-wide transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40";
   const btnDefault = `${btnBase} border-white/8 bg-white/4 text-slate-300 hover:border-white/16 hover:bg-white/8 hover:text-white`;
@@ -525,17 +507,15 @@ export default function ModelViewer({
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#050a14] text-slate-50">
-      {/* Subtle ambient gradient — no harsh glare */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(56,189,248,0.07),transparent)]" />
 
-      {/* ── 3-D Canvas ── */}
       <Canvas
         shadows
         className="h-full w-full"
         gl={{
           antialias: true,
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.05,
+          toneMappingExposure: 0.9,
         }}
         dpr={[1, 2]}
       >
@@ -689,23 +669,17 @@ export default function ModelViewer({
                   {model.subtitle}
                 </span>
               </div>
-              <p className="mt-0.5 max-w-2xl truncate text-[12px] leading-5 text-slate-400 sm:pr-4">
-                {model.description}
-              </p>
             </div>
           </div>
 
-          {/* Hint */}
           <div className="hidden shrink-0 rounded-full border border-white/8 bg-white/4 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.26em] text-slate-500 lg:block">
             Drag · Scroll · Pinch
           </div>
         </div>
       </header>
 
-      {/* ── Controls panel ── */}
       <aside className="absolute bottom-4 left-4 z-20 sm:bottom-5 sm:left-5 lg:bottom-6 lg:left-7">
         <div className="pointer-events-auto w-full rounded-2xl border border-white/8 bg-slate-950/65 p-3.5 shadow-[0_16px_48px_rgba(2,6,23,0.5)] backdrop-blur-xl sm:w-72 sm:p-4">
-          {/* Variant selector */}
           {model.variants.length > 1 && (
             <div className="mb-4">
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-600">
@@ -729,9 +703,7 @@ export default function ModelViewer({
             </div>
           )}
 
-          {/* Controls grid */}
           <div className="grid grid-cols-2 gap-1.5">
-            {/* Play / Pause / Rewind */}
             <button
               onClick={() => setPlaying((v) => !v)}
               className={playing ? btnActive : btnDefault}
@@ -751,7 +723,6 @@ export default function ModelViewer({
               )}
             </button>
 
-            {/* Auto-rotate */}
             <button
               onClick={() => setAutoRotate((v) => !v)}
               className={autoRotate ? btnActive : btnDefault}
@@ -760,7 +731,6 @@ export default function ModelViewer({
               {autoRotate ? "Stop spin" : "Rotate"}
             </button>
 
-            {/* Wireframe */}
             <button
               onClick={() => setWireframe((v) => !v)}
               className={wireframe ? btnActive : btnDefault}
@@ -768,13 +738,11 @@ export default function ModelViewer({
               <WireframeIcon /> Wireframe
             </button>
 
-            {/* Reset camera */}
             <button onClick={resetCamera} className={btnDefault}>
               <ResetIcon /> Reset view
             </button>
           </div>
 
-          {/* Accent line at bottom */}
           <div
             className="mt-3.5 h-px w-full rounded-full opacity-30"
             style={{
