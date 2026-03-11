@@ -686,11 +686,10 @@ export default function ModelViewer({
         <ambientLight intensity={0.12} />
         <hemisphereLight args={["#8fb4d4", "#04101f", 0.5]} />
 
-        {/* Key spot — tight, crisp shadow */}
         <spotLight
           castShadow
           position={[4, 10, 5]}
-          intensity={60}
+          intensity={28}
           angle={0.26}
           penumbra={0.65}
           distance={30}
@@ -699,24 +698,21 @@ export default function ModelViewer({
           shadow-normalBias={0.02}
         />
 
-        {/* Accent rim — model-tinted edge separation */}
         <spotLight
           position={[-5, 4.5, -8]}
-          intensity={18}
+          intensity={8}
           angle={0.42}
           penumbra={0.85}
           distance={25}
           color={model.accent}
         />
 
-        {/* Cool fill from opposite rim */}
         <directionalLight
           position={[6, 3, -6]}
           intensity={0.9}
           color="#dbeafe"
         />
 
-        {/* Subtle accent near-camera fill */}
         <pointLight
           position={[0, 1.5, 5]}
           intensity={5}
@@ -743,10 +739,10 @@ export default function ModelViewer({
           camRef={camRef}
         />
 
-        <ReflectiveGround />
+        <CementFloor />
 
         <ContactShadows
-          position={[0, 0.001, 0]}
+          position={[0, 0, 0]}
           scale={14}
           opacity={0.55}
           blur={3}
@@ -771,16 +767,12 @@ export default function ModelViewer({
         <PostFX />
       </Canvas>
 
-      {/* Edge vignette overlay — purely CSS, very subtle */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_100%_100%_at_50%_50%,transparent_55%,rgba(2,6,23,0.45)_100%)]" />
-      {/* Top & bottom gradient bars */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-linear-to-b from-[rgba(2,6,23,0.18)] to-transparent" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-linear-to-t from-[rgba(2,6,23,0.55)] to-transparent" />
 
-      {/* ── Header ── */}
       <header className="absolute inset-x-0 top-0 z-20 px-4 pt-4 sm:px-6 lg:px-8 lg:pt-5">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 rounded-2xl border border-white/8 bg-slate-950/55 px-3 py-2.5 shadow-[0_8px_32px_rgba(2,6,23,0.4)] backdrop-blur-xl sm:px-4 lg:px-5">
-          {/* Back + title */}
           <div className="flex min-w-0 items-center gap-3">
             <button
               onClick={onBack}
