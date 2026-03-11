@@ -19,7 +19,6 @@ import {
   useAnimations,
   AdaptiveDpr,
   AdaptiveEvents,
-  MeshReflectorMaterial,
 } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
 import { BlendFunction, KernelSize } from "postprocessing";
@@ -57,43 +56,169 @@ function Loader() {
   );
 }
 
-// ─── Glass detection ──────────────────────────────────────────────────────────
-function looksLikeGlass(
+type MatKind = "glass" | "water" | "concrete" | "metal" | "generic";
+
+function classifyMaterial(
   mesh: THREE.Mesh,
   mat: THREE.Material & Partial<THREE.MeshStandardMaterial>,
-): boolean {
-  if (mat.transparent && (mat.opacity ?? 1) < 0.95) return true;
+): MatKind {
+  const matName = (mat.name ?? "").toLowerCase();
+  const meshName = (mesh.name ?? "").toLowerCase();
+  const parentName = (mesh.parent?.name ?? "").toLowerCase();
+  const names = [matName, meshName, parentName];
 
-  const namesToCheck = [mesh.name, mat.name, mesh.parent?.name ?? ""].map((n) =>
-    n.toLowerCase(),
-  );
-  const glassKeywords = [
-    "glass",
-    "window",
-    "vitr",
-    "panel",
-    "roof",
-    "toit",
-    "glazing",
-    "crystal",
-    "transparent",
+  const glassKeywords = ["glass", "window", "vitr", "glazing", "crystal"];
+  if (names.some((n) => glassKeywords.some((k) => n.includes(k))))
+    return "glass";
+
+  const concreteKeywords = [
+    "concrete",
+    "cement",
+    "stone",
+    "urban",
+    "pavement",
+    "floor",
+    "ground",
+    "sol",
+    "dalle",
+    "terr",
   ];
-  if (namesToCheck.some((n) => glassKeywords.some((k) => n.includes(k))))
-    return true;
+  if (names.some((n) => concreteKeywords.some((k) => n.includes(k))))
+    return "concrete";
+
+  const metalKeywords = ["metal", "steel", "alumin", "iron", "chrome", "zinc"];
+  if (names.some((n) => metalKeywords.some((k) => n.includes(k))))
+    return "metal";
+
+  if (mat.transparent && (mat.opacity ?? 1) < 0.9) return "glass";
 
   const color = (mat as THREE.MeshStandardMaterial).color;
   if (color) {
-    const { r, g, b } = color;
-    const isLightBlue = b > 0.55 && b > r * 1.15 && b > g * 0.85 && r > 0.45;
-    const isNearWhite = r > 0.75 && g > 0.75 && b > 0.75;
-    const isCyan = b > 0.5 && g > 0.5 && r < 0.6;
-    if (isLightBlue || isNearWhite || isCyan) return true;
+    const r = color.r; // 0-1
+    const g = color.g;
+    const b = color.b;
+
+    if (r > 0.82 && g > 0.82 && b > 0.82) return "glass";
+
+    if (b > 0.8 && g > 0.8 && r < 0.15) return "glass";
+
+    const isWaterBlue =
+      b > 0.45 &&
+      (b > r * 1.25 || g > r * 1.25) &&
+      r < 0.72 &&
+      !(r > 0.78 && g > 0.78);
+    if (isWaterBlue) return "water";
+
+    const lum = (r + g + b) / 3;
+    const isConcreteGrey =
+      lum > 0.55 && Math.abs(r - g) < 0.12 && Math.abs(g - b) < 0.16 && b >= r; // slight blue cast typical of concrete in 3ds Max exports
+    if (isConcreteGrey) return "concrete";
+
+    if (r < 0.08 && g < 0.08 && b < 0.08) return "metal";
+
+    if (lum < 0.22 && Math.abs(r - g) < 0.04 && Math.abs(g - b) < 0.04)
+      return "metal";
   }
 
-  return false;
+  return "generic";
 }
 
-// ─── Material upgrade ─────────────────────────────────────────────────────────
+function buildGlassMat(): THREE.MeshPhysicalMaterial {
+  return new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color(0xffffff),
+    metalness: 0,
+    roughness: 0,
+    transmission: 0.94,
+    thickness: 0.35,
+    ior: 1.52,
+    reflectivity: 1,
+    envMapIntensity: 1.2,
+    clearcoat: 1,
+    clearcoatRoughness: 0,
+    transparent: true,
+    opacity: 1,
+    side: THREE.DoubleSide,
+  });
+}
+
+function buildWaterMat(originalColor: THREE.Color): THREE.MeshPhysicalMaterial {
+  return new THREE.MeshPhysicalMaterial({
+    color: originalColor.clone().lerp(new THREE.Color(0x0a2a4a), 0.35),
+    metalness: 0,
+    roughness: 0,
+    transmission: 0.88,
+    thickness: 1.2,
+    ior: 1.333,
+    reflectivity: 1,
+    envMapIntensity: 1.5,
+    clearcoat: 1,
+    clearcoatRoughness: 0,
+    transparent: true,
+    opacity: 0.92,
+    side: THREE.DoubleSide,
+  });
+}
+
+function buildConcreteMat(
+  originalColor: THREE.Color,
+  map: THREE.Texture | null,
+): THREE.MeshPhysicalMaterial {
+  const concreteColor = originalColor.clone();
+  concreteColor.r = Math.min(1, concreteColor.r * 1.08);
+  concreteColor.g = Math.min(1, concreteColor.g * 1.04);
+  concreteColor.b = Math.min(1, concreteColor.b * 0.88);
+
+  return new THREE.MeshPhysicalMaterial({
+    color: concreteColor,
+    map,
+    metalness: 0,
+    roughness: 0.88,
+    reflectivity: 0.05,
+    envMapIntensity: 0.2,
+    clearcoat: 0.04,
+    clearcoatRoughness: 0.9,
+    transparent: false,
+    side: THREE.FrontSide,
+  });
+}
+
+function buildMetalMat(
+  originalColor: THREE.Color,
+  map: THREE.Texture | null,
+): THREE.MeshPhysicalMaterial {
+  return new THREE.MeshPhysicalMaterial({
+    color: originalColor,
+    map,
+    metalness: 0.88,
+    roughness: 0.22,
+    reflectivity: 0.8,
+    envMapIntensity: 0.6,
+    clearcoat: 0.3,
+    clearcoatRoughness: 0.15,
+    transparent: false,
+    side: THREE.FrontSide,
+  });
+}
+
+function buildGenericMat(
+  originalColor: THREE.Color,
+  map: THREE.Texture | null,
+  oldSide: THREE.Side,
+): THREE.MeshPhysicalMaterial {
+  return new THREE.MeshPhysicalMaterial({
+    color: originalColor,
+    map,
+    metalness: 0.1,
+    roughness: 0.65,
+    reflectivity: 0.15,
+    envMapIntensity: 0.5,
+    clearcoat: 0.08,
+    clearcoatRoughness: 0.4,
+    transparent: false,
+    side: oldSide,
+  });
+}
+
 function makeReflective(root: THREE.Object3D) {
   root.traverse((child) => {
     const mesh = child as THREE.Mesh;
@@ -108,76 +233,100 @@ function makeReflective(root: THREE.Object3D) {
         THREE.MeshBasicMaterial &
         THREE.MeshPhysicalMaterial;
 
+      const kind = classifyMaterial(mesh, old);
+      const originalColor =
+        (old.color as THREE.Color | undefined)?.clone() ??
+        new THREE.Color(0xffffff);
+      const map = old.map ?? null;
+
       if (old.isMeshPhysicalMaterial) {
-        const isGlass = looksLikeGlass(mesh, old);
-        if (isGlass) {
-          old.color = new THREE.Color(0xffffff);
-          old.metalness = 0;
-          old.roughness = 0;
-          old.transmission = 0.94;
-          old.thickness = 0.4;
-          old.ior = 1.52;
-          old.reflectivity = 1;
-          old.clearcoat = 1;
-          old.clearcoatRoughness = 0;
-          old.envMapIntensity = 3;
-          old.transparent = true;
-          old.opacity = 1;
-        } else {
-          old.envMapIntensity = 1.2;
-          old.roughness = Math.min(old.roughness, 0.55);
-          old.metalness = Math.max(old.metalness, 0.3);
-          old.reflectivity = 0.5;
-          old.clearcoat = 0.1;
-          old.clearcoatRoughness = 0.3;
+        switch (kind) {
+          case "glass":
+            old.color.set(0xffffff);
+            old.metalness = 0;
+            old.roughness = 0;
+            old.transmission = 0.94;
+            old.thickness = 0.35;
+            old.ior = 1.52;
+            old.reflectivity = 1;
+            old.clearcoat = 1;
+            old.clearcoatRoughness = 0;
+            old.envMapIntensity = 1.2;
+            old.transparent = true;
+            old.opacity = 1;
+            old.side = THREE.DoubleSide;
+            break;
+          case "water":
+            old.color.lerp(new THREE.Color(0x0a2a4a), 0.35);
+            old.metalness = 0;
+            old.roughness = 0;
+            old.transmission = 0.88;
+            old.thickness = 1.2;
+            old.ior = 1.333;
+            old.reflectivity = 1;
+            old.clearcoat = 1;
+            old.clearcoatRoughness = 0;
+            old.envMapIntensity = 1.5;
+            old.transparent = true;
+            old.opacity = 0.92;
+            old.side = THREE.DoubleSide;
+            break;
+          case "concrete":
+            old.color.r = Math.min(1, old.color.r * 1.08);
+            old.color.g = Math.min(1, old.color.g * 1.04);
+            old.color.b = Math.min(1, old.color.b * 0.88);
+            old.metalness = 0;
+            old.roughness = 0.88;
+            old.reflectivity = 0.05;
+            old.clearcoat = 0.04;
+            old.clearcoatRoughness = 0.9;
+            old.envMapIntensity = 0.2;
+            old.transparent = false;
+            break;
+          case "metal":
+            old.metalness = 0.88;
+            old.roughness = 0.22;
+            old.reflectivity = 0.8;
+            old.clearcoat = 0.3;
+            old.clearcoatRoughness = 0.15;
+            old.envMapIntensity = 1.0;
+            old.transparent = false;
+            break;
+          default:
+            old.metalness = Math.max(old.metalness, 0.3);
+            old.roughness = Math.min(old.roughness, 0.55);
+            old.reflectivity = 0.4;
+            old.clearcoat = 0.08;
+            old.clearcoatRoughness = 0.4;
+            old.envMapIntensity = 0.6;
+            break;
         }
         old.needsUpdate = true;
         return old;
       }
 
-      const color =
-        (old.color as THREE.Color | undefined) ?? new THREE.Color(0xffffff);
-      const map = old.map ?? null;
-      const isGlass = looksLikeGlass(mesh, old);
-
-      const physical = isGlass
-        ? new THREE.MeshPhysicalMaterial({
-            color: new THREE.Color(0xffffff),
-            map: null,
-            metalness: 0,
-            roughness: 0,
-            transmission: 0.94,
-            thickness: 0.4,
-            ior: 1.52,
-            reflectivity: 1,
-            envMapIntensity: 3,
-            clearcoat: 1,
-            clearcoatRoughness: 0,
-            transparent: true,
-            opacity: 1,
-            side: THREE.DoubleSide,
-          })
-        : new THREE.MeshPhysicalMaterial({
-            color,
+      switch (kind) {
+        case "glass":
+          return buildGlassMat();
+        case "water":
+          return buildWaterMat(originalColor);
+        case "concrete":
+          return buildConcreteMat(originalColor, map);
+        case "metal":
+          return buildMetalMat(originalColor, map);
+        default:
+          return buildGenericMat(
+            originalColor,
             map,
-            metalness: 0.45,
-            roughness: 0.42,
-            reflectivity: 0.4,
-            envMapIntensity: 1.1,
-            clearcoat: 0.12,
-            clearcoatRoughness: 0.35,
-            transparent: false,
-            side: old.side ?? THREE.FrontSide,
-          });
-
-      return physical;
+            old.side ?? THREE.FrontSide,
+          );
+      }
     });
 
     mesh.material = upgraded.length === 1 ? upgraded[0] : upgraded;
   });
 }
 
-// ─── Animated model ───────────────────────────────────────────────────────────
 function AnimatedModel({
   glbPath,
   wireframe,
