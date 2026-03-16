@@ -133,12 +133,14 @@ const CARDS: CardData[] = [
     description:
       "Innovative sliding deck cover with wooden lounge chairs, designed to maximize patio space and protect pools.",
     img: "/card-img-2-low.jpg",
+    modelId: "moon",
   },
   {
     title: "Antares",
     description:
       "Modern tilt-up pool enclosure with a white aluminum frame, providing easy access and stylish weather protection.",
     img: "/card-img-3-low.jpg",
+    modelId: "antares",
   },
   {
     title: "Helios",
@@ -167,6 +169,13 @@ const CARDS: CardData[] = [
       "Ultra-low profile telescopic pool enclosure with a minimalist gray frame, offering sleek, flat-surface protection and safety.",
     img: "/card-img-7-low.jpg",
     modelId: "borealis",
+  },
+  {
+    title: "Galaxisis",
+    description:
+      "A spacious, high-profile telescopic pool enclosure with a black aluminum frame and clear glass gabled roof.",
+    img: "/card-img-8-low.jpg",
+    modelId: "galaxisis",
   },
 ];
 
