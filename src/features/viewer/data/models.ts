@@ -17,7 +17,7 @@ export const MODELS: ModelConfig[] = [
       "A sleek, telescopic glass pool enclosure featuring a retractable charcoal aluminum frame for year-round swimming protection.",
     image: "/card-img-1-low.jpg",
     accent: "#0f172a",
-    variants: [{ label: "Signature", glb: "/abris-sur-mesure.glb" }],
+    variants: [{ label: "Standard", glb: "/abris.glb" }],
   },
   {
     id: "moon",
@@ -26,7 +26,7 @@ export const MODELS: ModelConfig[] = [
       "Innovative sliding deck cover with wooden lounge chairs, designed to maximize patio space and protect pools.",
     image: "/card-img-2-low.jpg",
     accent: "#78350f",
-    variants: [{ label: "Standard", glb: "/moon-deck.glb" }],
+    variants: [{ label: "Standard", glb: "/moon.glb" }],
   },
   {
     id: "antares",
@@ -44,7 +44,7 @@ export const MODELS: ModelConfig[] = [
       "Contemporary hot tub setup featuring a central wood-paneled spa flanked by two symmetrical, glass-enclosed seating areas.",
     image: "/card-img-4-low.jpg",
     accent: "#475569",
-    variants: [{ label: "Animated", glb: "/helios.glb" }],
+    variants: [{ label: "Standard", glb: "/helios.glb" }],
   },
   {
     id: "draco",
@@ -53,7 +53,7 @@ export const MODELS: ModelConfig[] = [
       "A modern, rotatable dome spa enclosure with a sleek black frame, providing a panoramic, wind-shielded hot tub experience.",
     image: "/card-img-5-low.jpg",
     accent: "#334155",
-    variants: [{ label: "Animated", glb: "/draco.glb" }],
+    variants: [{ label: "Standard", glb: "/draco.glb" }],
   },
   {
     id: "andromeda",
@@ -62,7 +62,7 @@ export const MODELS: ModelConfig[] = [
       "Elegant telescopic glass sunroom featuring a charcoal frame, designed to create a versatile outdoor dining space.",
     image: "/card-img-6-low.jpg",
     accent: "#0ea5e9",
-    variants: [{ label: "Animated", glb: "/andromeda.glb" }],
+    variants: [{ label: "Standard", glb: "/andromeda.glb" }],
   },
   {
     id: "borealis",
@@ -71,7 +71,7 @@ export const MODELS: ModelConfig[] = [
       "Ultra-low profile telescopic pool enclosure with a minimalist gray frame, offering sleek, flat-surface protection and safety.",
     image: "/card-img-7-low.jpg",
     accent: "#2563eb",
-    variants: [{ label: "Borealis XS", glb: "/borealis-xs.glb" }],
+    variants: [{ label: "Standard", glb: "/borealis.glb" }],
   },
   {
     id: "galaxisis",
@@ -80,6 +80,6 @@ export const MODELS: ModelConfig[] = [
       "A spacious, high-profile telescopic pool enclosure with a black aluminum frame and clear glass gabled roof.",
     image: "/card-img-8-low.jpg",
     accent: "#14b8a6",
-    variants: [{ label: "Animated", glb: "/galaxisis.glb" }],
+    variants: [{ label: "Standard", glb: "/galaxisis.glb" }],
   },
 ];
