@@ -4,6 +4,7 @@ import { CustomEase } from "gsap/CustomEase";
 import { SplitText } from "gsap/SplitText";
 
 import "./Landing.css";
+import Copy from "../components/Copy";
 
 const Landing: React.FC = () => {
   useEffect(() => {
@@ -210,39 +211,39 @@ const Landing: React.FC = () => {
     <>
       <div className="preloader">
         <div className="intro-title">
-          <h1>3D Pool Enclosures</h1>
+          <Copy><h1>3D Pool Enclosures</h1></Copy>
         </div>
         <div className="outro-title">
-          <h1>by NoxHD</h1>
+          <Copy><h1>by NoxHD</h1></Copy>
         </div>
       </div>
 
       <div className="split-overlay">
         <div className="intro-title">
-          <h1>3D Pool Enclosures</h1>
+          <Copy><h1>3D Pool Enclosures</h1></Copy>
         </div>
         <div className="outro-title">
-          <h1>by NoxHD</h1>
+          <Copy><h1>by NoxHD</h1></Copy>
         </div>
       </div>
 
       {/* Tags Overlay */}
       <div className="tags-overlay">
         <div className="tag tag-1">
-          <p>Architectural</p>
+          <Copy><p>Architectural</p></Copy>
         </div>
         <div className="tag tag-2">
-          <p>Structural</p>
+          <Copy><p>Structural</p></Copy>
         </div>
         <div className="tag tag-3">
-          <p>3D Designing</p>
+          <Copy><p>3D Designing</p></Copy>
         </div>
       </div>
 
       <div className="landing-container">
         <nav>
-          <p id="logo">3D</p>
-          <p>Menu</p>
+          <Copy><p id="logo">3D</p></Copy>
+          <Copy><p>Menu</p></Copy>
         </nav>
 
         <div className="hero-img">
@@ -250,12 +251,12 @@ const Landing: React.FC = () => {
         </div>
 
         <div className="card">
-          <h1>3D Pool Enclosures</h1>
+          <Copy><h1>3D Pool Enclosures</h1></Copy>
         </div>
 
         <footer>
-          <p>Scroll Down</p>
-          <p>Made by NoxHD</p>
+          <Copy><p>Scroll Down</p></Copy>
+          <Copy><p>Made by NoxHD</p></Copy>
         </footer>
       </div>
     </>

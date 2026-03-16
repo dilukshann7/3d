@@ -5,6 +5,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 import Lenis from "lenis";
 import "./Hero.css";
+import Copy from "../components/Copy";
 
 function horizontalLoop(
   items: Element[],
@@ -346,7 +347,7 @@ export default function Hero() {
   return (
     <div ref={containerRef}>
       <section className="intro">
-        <h1>We design spaces that don&apos;t just exist.</h1>
+        <Copy><h1>We make pool enclosures that goes above and beyond.</h1></Copy>
       </section>
 
       <section className="cards">
@@ -365,10 +366,10 @@ export default function Hero() {
             <div className="card-wrapper">
               <div className="card-content">
                 <div className="card-title">
-                  <h1>{card.title}</h1>
+                  <Copy><h1>{card.title}</h1></Copy>
                 </div>
                 <div className="card-description">
-                  <p>{card.description}</p>
+                  <Copy><p>{card.description}</p></Copy>
                   {card.modelId ? (
                     <Link
                       className="card-btn"
@@ -392,7 +393,7 @@ export default function Hero() {
       </section>
 
       <section className="outro">
-        <h1>Architecture reimagined for the virtual age.</h1>
+        <Copy><h1>Architecture reimagined for the virtual age.</h1></Copy>
       </section>
     </div>
   );
