@@ -3,65 +3,83 @@ export type ModelVariant = { label: string; glb: string };
 export type ModelConfig = {
   id: string;
   name: string;
-  subtitle: string;
   description: string;
+  image: string;
   accent: string;
   variants: ModelVariant[];
 };
 
 export const MODELS: ModelConfig[] = [
   {
-    id: "borealis",
-    name: "Borealis",
-    subtitle: "Compact canopy system",
-    description:
-      "A compact modular shelter with a clean architectural profile for terraces, hospitality, and urban outdoor zones.",
-    accent: "#2563eb",
-    variants: [{ label: "Borealis XS", glb: "/Borealis XS.glb" }],
-  },
-  {
     id: "abris",
     name: "Abris Sur Mesure",
-    subtitle: "Custom shelter range",
     description:
-      "A fully tailored shelter line engineered for bespoke dimensions, material finishes, and client-specific site constraints.",
+      "A sleek, telescopic glass pool enclosure featuring a retractable charcoal aluminum frame for year-round swimming protection.",
+    image: "/card-img-1-low.jpg",
     accent: "#0f172a",
-    variants: [{ label: "Signature", glb: "/ABRIS SUR MESURE.glb" }],
+    variants: [{ label: "Signature", glb: "/abris-sur-mesure.glb" }],
+  },
+  {
+    id: "moon",
+    name: "Moon Deck",
+    description:
+      "Innovative sliding deck cover with wooden lounge chairs, designed to maximize patio space and protect pools.",
+    image: "/card-img-2-low.jpg",
+    accent: "#78350f",
+    variants: [{ label: "Standard", glb: "/moon-deck.glb" }],
+  },
+  {
+    id: "antares",
+    name: "Antares",
+    description:
+      "Modern tilt-up pool enclosure with a white aluminum frame, providing easy access and stylish weather protection.",
+    image: "/card-img-3-low.jpg",
+    accent: "#475569",
+    variants: [{ label: "Standard", glb: "/antares.glb" }],
   },
   {
     id: "helios",
     name: "Helios",
-    subtitle: "Solar pergola platform",
     description:
-      "A high-efficiency pergola solution integrating overhead solar surfaces with a streamlined structural language.",
+      "Contemporary hot tub setup featuring a central wood-paneled spa flanked by two symmetrical, glass-enclosed seating areas.",
+    image: "/card-img-4-low.jpg",
     accent: "#475569",
-    variants: [{ label: "Animated", glb: "/Helios.glb" }],
-  },
-  {
-    id: "andromeda",
-    name: "Andromeda",
-    subtitle: "Large-span architecture",
-    description:
-      "A large-span deployment concept optimized for broad coverage zones and high-traffic enterprise environments.",
-    accent: "#0ea5e9",
-    variants: [{ label: "Animated", glb: "/Andromeda.glb" }],
+    variants: [{ label: "Animated", glb: "/helios.glb" }],
   },
   {
     id: "draco",
     name: "Draco",
-    subtitle: "Angular frame series",
     description:
-      "A geometric frame-forward model focused on stronger visual identity and precise structural articulation.",
+      "A modern, rotatable dome spa enclosure with a sleek black frame, providing a panoramic, wind-shielded hot tub experience.",
+    image: "/card-img-5-low.jpg",
     accent: "#334155",
-    variants: [{ label: "Animated", glb: "/Draco.glb" }],
+    variants: [{ label: "Animated", glb: "/draco.glb" }],
+  },
+  {
+    id: "andromeda",
+    name: "Andromeda",
+    description:
+      "Elegant telescopic glass sunroom featuring a charcoal frame, designed to create a versatile outdoor dining space.",
+    image: "/card-img-6-low.jpg",
+    accent: "#0ea5e9",
+    variants: [{ label: "Animated", glb: "/andromeda.glb" }],
+  },
+  {
+    id: "borealis",
+    name: "Borealis",
+    description:
+      "Ultra-low profile telescopic pool enclosure with a minimalist gray frame, offering sleek, flat-surface protection and safety.",
+    image: "/card-img-7-low.jpg",
+    accent: "#2563eb",
+    variants: [{ label: "Borealis XS", glb: "/borealis-xs.glb" }],
   },
   {
     id: "galaxisis",
     name: "Galaxisis",
-    subtitle: "Adaptive urban module",
     description:
-      "A flexible urban module designed for adaptable installations across retail, civic, and mixed-use contexts.",
+      "A spacious, high-profile telescopic pool enclosure with a black aluminum frame and clear glass gabled roof.",
+    image: "/card-img-8-low.jpg",
     accent: "#14b8a6",
-    variants: [{ label: "Animated", glb: "/Galaxisis.glb" }],
+    variants: [{ label: "Animated", glb: "/galaxisis.glb" }],
   },
 ];
