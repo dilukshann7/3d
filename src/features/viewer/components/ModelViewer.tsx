@@ -799,16 +799,6 @@ export default function ModelViewer({
                 <h1 className="font-[IBM_Plex_Sans] text-[15px] font-semibold tracking-tight text-white sm:text-base">
                   {model.name}
                 </h1>
-                <span
-                  className="rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.26em]"
-                  style={{
-                    borderColor: `${model.accent}44`,
-                    color: model.accent,
-                    backgroundColor: `${model.accent}12`,
-                  }}
-                >
-                  {model.subtitle}
-                </span>
               </div>
             </div>
           </div>
