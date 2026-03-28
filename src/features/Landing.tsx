@@ -208,7 +208,7 @@ const Landing: React.FC = () => {
   }, []);
 
   return (
-    <>
+    <div className="landing-wrapper">
       <div className="preloader">
         <div className="intro-title">
           <Copy><h1>3D Pool Enclosures</h1></Copy>
@@ -259,7 +259,7 @@ const Landing: React.FC = () => {
           <Copy><p>Made by NoxHD</p></Copy>
         </footer>
       </div>
-    </>
+    </div>
   );
 };
 

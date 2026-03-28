@@ -176,7 +176,7 @@ nav p#logo {
 }
 
 @media (max-width: 1000px) {
-  h1 {
+  .landing-wrapper h1 {
     font-size: 2.5rem;
   }
 
