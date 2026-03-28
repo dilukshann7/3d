@@ -21,7 +21,7 @@ import {
   AdaptiveEvents,
 } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
-import { BlendFunction, KernelSize } from "postprocessing";
+import { BlendFunction } from "postprocessing";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 import type { ModelConfig } from "../data/models";
@@ -74,16 +74,8 @@ function classifyMaterial(
     return "glass";
 
   const concreteKeywords = [
-    "concrete",
-    "cement",
-    "stone",
-    "urban",
-    "pavement",
-    "floor",
-    "ground",
-    "sol",
-    "dalle",
-    "terr",
+    "concrete", "cement", "stone", "urban", "pavement", "floor",
+    "ground", "sol", "dalle", "terr",
   ];
   if (names.some((n) => concreteKeywords.some((k) => n.includes(k))))
     return "concrete";
@@ -96,12 +88,11 @@ function classifyMaterial(
 
   const color = (mat as THREE.MeshStandardMaterial).color;
   if (color) {
-    const r = color.r; // 0-1
+    const r = color.r;
     const g = color.g;
     const b = color.b;
 
     if (r > 0.82 && g > 0.82 && b > 0.82) return "glass";
-
     if (b > 0.8 && g > 0.8 && r < 0.15) return "glass";
 
     const isWaterBlue =
@@ -113,11 +104,10 @@ function classifyMaterial(
 
     const lum = (r + g + b) / 3;
     const isConcreteGrey =
-      lum > 0.55 && Math.abs(r - g) < 0.12 && Math.abs(g - b) < 0.16 && b >= r; // slight blue cast typical of concrete in 3ds Max exports
+      lum > 0.55 && Math.abs(r - g) < 0.12 && Math.abs(g - b) < 0.16 && b >= r;
     if (isConcreteGrey) return "concrete";
 
     if (r < 0.08 && g < 0.08 && b < 0.08) return "metal";
-
     if (lum < 0.22 && Math.abs(r - g) < 0.04 && Math.abs(g - b) < 0.04)
       return "metal";
   }
@@ -169,7 +159,6 @@ function buildConcreteMat(
   concreteColor.r = Math.min(1, concreteColor.r * 1.08);
   concreteColor.g = Math.min(1, concreteColor.g * 1.04);
   concreteColor.b = Math.min(1, concreteColor.b * 0.88);
-
   return new THREE.MeshPhysicalMaterial({
     color: concreteColor,
     map,
@@ -367,9 +356,7 @@ function AnimatedModel({
     prepared.root.traverse((child) => {
       const mesh = child as THREE.Mesh;
       if (!mesh.isMesh) return;
-      const mats = Array.isArray(mesh.material)
-        ? mesh.material
-        : [mesh.material];
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
       mats.forEach((mat) => {
         const m = mat as THREE.MeshStandardMaterial;
         if (m.wireframe !== undefined) m.wireframe = wireframe;
@@ -866,19 +853,7 @@ export default function ModelViewer({
               onClick={() => setPlaying((v) => !v)}
               className={playing ? btnActive : btnDefault}
             >
-              {playing ? (
-                <>
-                  <PauseIcon /> Pause
-                </>
-              ) : reversed ? (
-                <>
-                  <RewindIcon /> Rewind
-                </>
-              ) : (
-                <>
-                  <PlayIcon /> Play
-                </>
-              )}
+              {playing ? (<><PauseIcon /> Pause</>) : reversed ? (<><RewindIcon /> Rewind</>) : (<><PlayIcon /> Play</>)}
             </button>
 
             <button
@@ -924,9 +899,7 @@ export default function ModelViewer({
 
           <div
             className="mt-3.5 h-px w-full rounded-full opacity-30"
-            style={{
-              background: `linear-gradient(90deg, transparent, ${model.accent}, transparent)`,
-            }}
+            style={{ background: `linear-gradient(90deg, transparent, ${model.accent}, transparent)` }}
           />
           <p className="mt-2 text-center text-[10px] text-slate-600">
             Interactive 3D viewer
