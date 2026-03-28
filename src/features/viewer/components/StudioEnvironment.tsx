@@ -3,10 +3,23 @@ import { Environment, Lightformer } from "@react-three/drei";
 export default function StudioEnvironment({
   accent,
   intensity = 1,
+  environmentMapUrl,
 }: {
   accent: string;
   intensity?: number;
+  environmentMapUrl?: string;
 }) {
+  if (environmentMapUrl) {
+    return (
+      <Environment
+        files={environmentMapUrl}
+        resolution={256}
+        frames={1}
+        environmentIntensity={intensity}
+      />
+    );
+  }
+
   return (
     <Environment
       resolution={256}      // 256 is indistinguishable from 512 for env reflections

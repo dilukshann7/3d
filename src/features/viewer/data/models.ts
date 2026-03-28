@@ -1,4 +1,45 @@
+import { assetUrl } from "../../../utils/assetUrl";
+
 export type ModelVariant = { label: string; glb: string };
+export type MaterialKind = "glass" | "water" | "concrete" | "metal" | "generic";
+
+export type MaterialFinish = {
+  color?: string;
+  mapUrl?: string;
+  roughnessMapUrl?: string;
+  metalnessMapUrl?: string;
+  normalMapUrl?: string;
+  bumpMapUrl?: string;
+  repeat?: [number, number];
+  normalScale?: number | [number, number];
+  metalness?: number;
+  roughness?: number;
+  reflectivity?: number;
+  envMapIntensity?: number;
+  clearcoat?: number;
+  clearcoatRoughness?: number;
+  transmission?: number;
+  opacity?: number;
+  bumpScale?: number;
+};
+
+export type ModelTextureOption = {
+  label: string;
+  swatch: string;
+  materials?: Partial<Record<MaterialKind, MaterialFinish>>;
+};
+
+export type ModelSurfaceOptions = {
+  metal?: ModelTextureOption[];
+  glass?: ModelTextureOption[];
+};
+
+export type ModelMetalTextureTargets = {
+  materialNames?: string[];
+  materialNameIncludes?: string[];
+  nodePrefixes?: string[];
+  excludedNodePrefixes?: string[];
+};
 
 export type ModelConfig = {
   id: string;
@@ -7,8 +48,61 @@ export type ModelConfig = {
   image: string;
   accent: string;
   variants: ModelVariant[];
+  surfaceOptions?: ModelSurfaceOptions;
+  metalTextureTargets?: ModelMetalTextureTargets;
   irlImages?: string[];
   specs?: { label: string; value: string }[];
+};
+
+export const DEFAULT_VIEWER_ENVIRONMENT_URL = assetUrl(
+  "textures/glass/DayEnvironmentHDRI070_1K_TONEMAPPED.jpg",
+);
+
+const SHARED_METAL_TEXTURES: ModelTextureOption[] = [
+  {
+    label: "Road",
+    swatch: "#8b7355",
+    materials: {
+      metal: {
+        mapUrl: assetUrl("textures/metal/Road015C_1K-JPG_Color.jpg"),
+        repeat: [1, 1],
+        metalness: 0.55,
+        roughness: 0.58,
+        reflectivity: 0.28,
+        envMapIntensity: 0.65,
+      },
+    },
+  },
+  {
+    label: "Asphalt",
+    swatch: "#4b5563",
+    materials: {
+      metal: {
+        mapUrl: assetUrl("textures/metal/Asphalt031_1K-JPG_Color.jpg"),
+        roughnessMapUrl: assetUrl("textures/metal/Asphalt031_1K-JPG_Color.jpg"),
+        bumpMapUrl: assetUrl("textures/metal/Asphalt031_1K-JPG_Color.jpg"),
+        repeat: [1, 1],
+        color: "#ffffff",
+        metalness: 0.04,
+        roughness: 0.98,
+        reflectivity: 0.02,
+        envMapIntensity: 0.12,
+        bumpScale: 0.12,
+      },
+    },
+  },
+];
+
+const SHARED_GLASS_TEXTURES: ModelTextureOption[] = [];
+
+const BOX_ONLY_TARGETS: ModelMetalTextureTargets = {
+  nodePrefixes: ["Box"],
+  excludedNodePrefixes: ["Line", "Plane", "Rectangle", "Object"],
+};
+
+const BOX_AND_SHAPE_TARGETS: ModelMetalTextureTargets = {
+  nodePrefixes: ["Box", "Shape"],
+  excludedNodePrefixes: ["Line", "Plane", "Rectangle", "Object"],
 };
 
 export const MODELS: ModelConfig[] = [
@@ -17,13 +111,22 @@ export const MODELS: ModelConfig[] = [
     name: "Antares",
     description:
       "Modern tilt-up pool enclosure with a white aluminum frame, providing easy access and stylish weather protection.",
-    image: "/card-img-3-low.jpg",
+    image: assetUrl("card-img-3-low.jpg"),
     accent: "#475569",
-    variants: [{ label: "Standard", glb: "/antares.glb" }],
+    variants: [{ label: "Standard", glb: assetUrl("antares.glb") }],
+    surfaceOptions: {
+      metal: SHARED_METAL_TEXTURES,
+      glass: SHARED_GLASS_TEXTURES,
+    },
+    metalTextureTargets: {
+      materialNames: ["02___Default", "07___Defaultddd", "15___Default"],
+      nodePrefixes: ["Box", "Cylinder", "Shape"],
+      excludedNodePrefixes: ["Line", "Plane", "Object"],
+    },
     irlImages: [
-      "/card-img-3-low.jpg",
+      assetUrl("card-img-3-low.jpg"),
       "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=1200"
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=1200",
     ],
     specs: [
       { label: "Design", value: "Tilt-Up Access" },
