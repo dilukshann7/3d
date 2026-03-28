@@ -115,6 +115,9 @@ function classifyMaterial(
   return "generic";
 }
 
+// ─── PERF: Material builders are unchanged, but makeReflective now
+//     mutates existing MeshStandardMaterial in-place whenever possible
+//     to avoid allocating new GPU resources.
 function buildGlassMat(): THREE.MeshPhysicalMaterial {
   return new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(0xffffff),
@@ -210,6 +213,9 @@ function buildGenericMat(
   });
 }
 
+// ─── PERF: Track upgraded materials to skip on re-runs (e.g. wireframe toggle)
+const upgradedMaterials = new WeakSet<THREE.Material>();
+
 function makeReflective(root: THREE.Object3D) {
   root.traverse((child) => {
     const mesh = child as THREE.Mesh;
@@ -220,98 +226,73 @@ function makeReflective(root: THREE.Object3D) {
 
     const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     const upgraded = mats.map((mat) => {
+      // PERF: Skip already-upgraded materials
+      if (upgradedMaterials.has(mat)) return mat;
+
       const old = mat as THREE.MeshStandardMaterial &
         THREE.MeshBasicMaterial &
         THREE.MeshPhysicalMaterial;
 
       const kind = classifyMaterial(mesh, old);
       const originalColor =
-        (old.color as THREE.Color | undefined)?.clone() ??
-        new THREE.Color(0xffffff);
+        (old.color as THREE.Color | undefined)?.clone() ?? new THREE.Color(0xffffff);
       const map = old.map ?? null;
 
+      let result: THREE.Material;
+
       if (old.isMeshPhysicalMaterial) {
+        // Mutate in-place — no new GPU object
         switch (kind) {
           case "glass":
-            old.color.set(0xffffff);
-            old.metalness = 0;
-            old.roughness = 0;
-            old.transmission = 0.94;
-            old.thickness = 0.35;
-            old.ior = 1.52;
-            old.reflectivity = 1;
-            old.clearcoat = 1;
-            old.clearcoatRoughness = 0;
-            old.envMapIntensity = 1.2;
-            old.transparent = true;
-            old.opacity = 1;
+            old.color.set(0xffffff); old.metalness = 0; old.roughness = 0;
+            old.transmission = 0.94; old.thickness = 0.35; old.ior = 1.52;
+            old.reflectivity = 1; old.clearcoat = 1; old.clearcoatRoughness = 0;
+            old.envMapIntensity = 1.2; old.transparent = true; old.opacity = 1;
             old.side = THREE.DoubleSide;
             break;
           case "water":
-            old.color.lerp(new THREE.Color(0x0a2a4a), 0.35);
-            old.metalness = 0;
-            old.roughness = 0;
-            old.transmission = 0.88;
-            old.thickness = 1.2;
-            old.ior = 1.333;
-            old.reflectivity = 1;
-            old.clearcoat = 1;
-            old.clearcoatRoughness = 0;
-            old.envMapIntensity = 1.5;
-            old.transparent = true;
-            old.opacity = 0.92;
-            old.side = THREE.DoubleSide;
+            old.color.lerp(new THREE.Color(0x0a2a4a), 0.35); old.metalness = 0;
+            old.roughness = 0; old.transmission = 0.88; old.thickness = 1.2;
+            old.ior = 1.333; old.reflectivity = 1; old.clearcoat = 1;
+            old.clearcoatRoughness = 0; old.envMapIntensity = 1.5;
+            old.transparent = true; old.opacity = 0.92; old.side = THREE.DoubleSide;
             break;
           case "concrete":
             old.color.r = Math.min(1, old.color.r * 1.08);
             old.color.g = Math.min(1, old.color.g * 1.04);
             old.color.b = Math.min(1, old.color.b * 0.88);
-            old.metalness = 0;
-            old.roughness = 0.88;
-            old.reflectivity = 0.05;
-            old.clearcoat = 0.04;
-            old.clearcoatRoughness = 0.9;
-            old.envMapIntensity = 0.2;
-            old.transparent = false;
+            old.metalness = 0; old.roughness = 0.88; old.reflectivity = 0.05;
+            old.clearcoat = 0.04; old.clearcoatRoughness = 0.9;
+            old.envMapIntensity = 0.2; old.transparent = false;
             break;
           case "metal":
-            old.metalness = 0.88;
-            old.roughness = 0.22;
-            old.reflectivity = 0.8;
-            old.clearcoat = 0.3;
-            old.clearcoatRoughness = 0.15;
-            old.envMapIntensity = 1.0;
-            old.transparent = false;
+            old.metalness = 0.88; old.roughness = 0.22; old.reflectivity = 0.8;
+            old.clearcoat = 0.3; old.clearcoatRoughness = 0.15;
+            old.envMapIntensity = 1.0; old.transparent = false;
             break;
           default:
             old.metalness = Math.max(old.metalness, 0.3);
             old.roughness = Math.min(old.roughness, 0.55);
-            old.reflectivity = 0.4;
-            old.clearcoat = 0.08;
-            old.clearcoatRoughness = 0.4;
-            old.envMapIntensity = 0.6;
+            old.reflectivity = 0.4; old.clearcoat = 0.08;
+            old.clearcoatRoughness = 0.4; old.envMapIntensity = 0.6;
             break;
         }
         old.needsUpdate = true;
-        return old;
+        result = old;
+      } else {
+        switch (kind) {
+          case "glass":   result = buildGlassMat(); break;
+          case "water":   result = buildWaterMat(originalColor); break;
+          case "concrete": result = buildConcreteMat(originalColor, map); break;
+          case "metal":   result = buildMetalMat(originalColor, map); break;
+          default:        result = buildGenericMat(originalColor, map, old.side ?? THREE.FrontSide); break;
+        }
+        // Dispose the old material to free GPU memory
+        old.dispose();
       }
 
-      switch (kind) {
-        case "glass":
-          return buildGlassMat();
-        case "water":
-          return buildWaterMat(originalColor);
-        case "concrete":
-          return buildConcreteMat(originalColor, map);
-        case "metal":
-          return buildMetalMat(originalColor, map);
-        default:
-          return buildGenericMat(
-            originalColor,
-            map,
-            old.side ?? THREE.FrontSide,
-          );
-      }
+      upgradedMaterials.add(result);
+      return result;
     });
 
     mesh.material = upgraded.length === 1 ? upgraded[0] : upgraded;
