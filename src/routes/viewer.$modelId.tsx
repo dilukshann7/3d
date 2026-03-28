@@ -27,6 +27,10 @@ function ViewerPage() {
   }
 
   return (
-    <ModelViewer model={model} onBack={() => navigate({ to: ROUTES.home })} />
+    <ModelViewer
+      key={model.id}
+      model={model}
+      onBack={() => navigate({ to: ROUTES.home })}
+    />
   );
 }
