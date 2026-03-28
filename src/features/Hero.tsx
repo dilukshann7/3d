@@ -189,7 +189,8 @@ export default function Hero() {
     // Lenis smooth scroll
     const lenis = new Lenis();
     lenis.on("scroll", ScrollTrigger.update);
-    gsap.ticker.add((time) => lenis.raf(time * 1000));
+    const updateLenis = (time: number) => lenis.raf(time * 1000);
+    gsap.ticker.add(updateLenis);
     gsap.ticker.lagSmoothing(0);
 
     const container = containerRef.current;
@@ -340,12 +341,12 @@ export default function Hero() {
     return () => {
       ScrollTrigger.getAll().forEach((t) => t.kill());
       lenis.destroy();
-      gsap.ticker.remove((time) => lenis.raf(time * 1000));
+      gsap.ticker.remove(updateLenis);
     };
   }, []);
 
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} className="hero-wrapper">
       <section className="intro">
         <Copy><h1>We make pool enclosures that goes above and beyond.</h1></Copy>
       </section>
