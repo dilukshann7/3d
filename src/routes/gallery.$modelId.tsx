@@ -45,7 +45,7 @@ function GalleryPage() {
             </Link>
             <div>
               <h1 className="text-[15px] font-semibold tracking-tight text-white sm:text-base">
-                {model.name} IRL Gallery
+                {model.name} Gallery
               </h1>
               <p className="text-[11px] text-slate-400">{images.length} photos</p>
             </div>
@@ -68,7 +68,7 @@ function GalleryPage() {
             >
               <img
                 src={img}
-                alt={`${model.name} IRL shot ${i + 1}`}
+                alt={`${model.name} shot ${i + 1}`}
                 className="w-full object-cover"
                 loading="lazy"
               />
