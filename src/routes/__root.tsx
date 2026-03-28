@@ -1,8 +1,13 @@
-import { Link, Outlet, createRootRoute } from "@tanstack/react-router";
+import { Link, Outlet, createRootRoute, ScrollRestoration } from "@tanstack/react-router";
 import { ROUTES } from "./routerPaths";
 
 export const Route = createRootRoute({
-  component: () => <Outlet />,
+  component: () => (
+    <>
+      <ScrollRestoration />
+      <Outlet />
+    </>
+  ),
   notFoundComponent: NotFoundPage,
 });
 
