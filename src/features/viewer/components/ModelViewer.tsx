@@ -583,7 +583,7 @@ export default function ModelViewer({
 
   return (
     <div
-      className="relative h-screen w-screen overflow-hidden bg-[#050a14] text-slate-50"
+      className="relative h-screen w-screen overflow-hidden bg-slate-50 text-slate-900"
       onPointerDown={() => setHasInteracted(true)}
       onWheel={() => setHasInteracted(true)}
     >
@@ -722,9 +722,9 @@ export default function ModelViewer({
         <PostFX />
       </Canvas>
 
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_100%_100%_at_50%_50%,transparent_55%,rgba(2,6,23,0.45)_100%)]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-linear-to-b from-[rgba(2,6,23,0.18)] to-transparent" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-linear-to-t from-[rgba(2,6,23,0.55)] to-transparent" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_100%_100%_at_50%_50%,transparent_55%,rgba(241,245,249,0.85)_100%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-[rgba(241,245,249,0.8)] to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[rgba(241,245,249,0.95)] to-transparent" />
 
       <header className="absolute inset-x-0 top-0 z-20 px-4 pt-4 sm:px-6 lg:px-8 lg:pt-5">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 rounded-2xl border border-white/8 bg-slate-950/55 px-3 py-2.5 shadow-[0_8px_32px_rgba(2,6,23,0.4)] backdrop-blur-xl sm:px-4 lg:px-5">
@@ -748,7 +748,7 @@ export default function ModelViewer({
             </div>
           </div>
 
-          <div className="hidden shrink-0 rounded-full border border-white/8 bg-white/4 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.26em] text-slate-500 lg:block">
+          <div className="hidden shrink-0 rounded-full border border-white/8 bg-white/4 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.26em] text-slate-100 lg:block">
             Drag · Scroll · Pinch
           </div>
         </div>
