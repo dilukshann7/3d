@@ -6,6 +6,7 @@ import { SplitText } from "gsap/SplitText";
 import Lenis from "lenis";
 import "./Hero.css";
 import Copy from "../components/Copy";
+import { assetUrl } from "../utils/assetUrl";
 
 function horizontalLoop(
   items: Element[],
@@ -125,7 +126,7 @@ const CARDS: CardData[] = [
     title: "Abris Sur Mesure",
     description:
       "A sleek, telescopic glass pool enclosure featuring a retractable charcoal aluminum frame for year-round swimming protection.",
-    img: "/card-img-1-low.jpg",
+    img: assetUrl("card-img-1-low.jpg"),
     isIntro: true,
     modelId: "abris",
   },
@@ -133,49 +134,49 @@ const CARDS: CardData[] = [
     title: "Moon Deck",
     description:
       "Innovative sliding deck cover with wooden lounge chairs, designed to maximize patio space and protect pools.",
-    img: "/card-img-2-low.jpg",
+    img: assetUrl("card-img-2-low.jpg"),
     modelId: "moon",
   },
   {
     title: "Antares",
     description:
       "Modern tilt-up pool enclosure with a white aluminum frame, providing easy access and stylish weather protection.",
-    img: "/card-img-3-low.jpg",
+    img: assetUrl("card-img-3-low.jpg"),
     modelId: "antares",
   },
   {
     title: "Helios",
     description:
       "Contemporary hot tub setup featuring a central wood-paneled spa flanked by two symmetrical, glass-enclosed seating areas.",
-    img: "/card-img-4-low.jpg",
+    img: assetUrl("card-img-4-low.jpg"),
     modelId: "helios",
   },
   {
     title: "Draco",
     description:
       "A modern, rotatable dome spa enclosure with a sleek black frame, providing a panoramic, wind-shielded hot tub experience.",
-    img: "/card-img-5-low.jpg",
+    img: assetUrl("card-img-5-low.jpg"),
     modelId: "draco",
   },
   {
     title: "Andromeda",
     description:
       "Elegant telescopic glass sunroom featuring a charcoal frame, designed to create a versatile outdoor dining space.",
-    img: "/card-img-6-low.jpg",
+    img: assetUrl("card-img-6-low.jpg"),
     modelId: "andromeda",
   },
   {
     title: "Borealis",
     description:
       "Ultra-low profile telescopic pool enclosure with a minimalist gray frame, offering sleek, flat-surface protection and safety.",
-    img: "/card-img-7-low.jpg",
+    img: assetUrl("card-img-7-low.jpg"),
     modelId: "borealis",
   },
   {
     title: "Galaxisis",
     description:
       "A spacious, high-profile telescopic pool enclosure with a black aluminum frame and clear glass gabled roof.",
-    img: "/card-img-8-low.jpg",
+    img: assetUrl("card-img-8-low.jpg"),
     modelId: "galaxisis",
   },
 ];
@@ -184,164 +185,170 @@ export default function Hero() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    gsap.registerPlugin(SplitText, ScrollTrigger);
+    let cancelled = false;
+    let lenis: Lenis | null = null;
+    let updateLenis: ((time: number) => void) | null = null;
 
-    // Lenis smooth scroll
-    const lenis = new Lenis();
-    lenis.on("scroll", ScrollTrigger.update);
-    const updateLenis = (time: number) => lenis.raf(time * 1000);
-    gsap.ticker.add(updateLenis);
-    gsap.ticker.lagSmoothing(0);
+    const init = async () => {
+      gsap.registerPlugin(SplitText, ScrollTrigger);
 
-    const container = containerRef.current;
-    if (!container) return;
-
-    const cards = gsap.utils.toArray<HTMLElement>(".card", container);
-    const introCard = cards[0];
-
-    // Split titles
-    const titles = gsap.utils.toArray<HTMLElement>(".card-title h1", container);
-    titles.forEach((title) => {
-      const split = new SplitText(title, {
-        type: "chars",
-        charsClass: "char",
-        tag: "div",
-      });
-      split.chars.forEach((char) => {
-        char.innerHTML = `<span>${char.textContent}</span>`;
-      });
-    });
-
-    // Intro card image setup
-    const cardImgWrapper = introCard.querySelector<HTMLElement>(".card-img");
-    const cardImg = introCard.querySelector<HTMLElement>(".card-img img");
-    if (cardImgWrapper)
-      gsap.set(cardImgWrapper, { scale: 0.5, borderRadius: "400px" });
-    if (cardImg) gsap.set(cardImg, { scale: 1.5 });
-
-    const marquee = introCard.querySelector<HTMLElement>(
-      ".card-marquee .marquee",
-    );
-    const titleChars = introCard.querySelectorAll<HTMLElement>(".char span");
-    const description =
-      introCard.querySelector<HTMLElement>(".card-description");
-
-    // Track revealed state outside DOM to avoid stale property access
-    let introRevealed = false;
-
-    // Intro card scroll animation
-    ScrollTrigger.create({
-      trigger: introCard,
-      start: "top top",
-      end: "+=300vh",
-      onUpdate: (self) => {
-        const progress = self.progress;
-        const imgScale = 0.5 + progress * 0.5;
-        const borderRadius = 400 - progress * 375;
-        const innerImgScale = 1.5 - progress * 0.5;
-
-        if (cardImgWrapper)
-          gsap.set(cardImgWrapper, {
-            scale: imgScale,
-            borderRadius: `${borderRadius}px`,
-          });
-        if (cardImg) gsap.set(cardImg, { scale: innerImgScale });
-
-        if (marquee) {
-          if (imgScale >= 0.5 && imgScale <= 0.75) {
-            gsap.set(marquee, { opacity: 1 - (imgScale - 0.5) / 0.25 });
-          } else if (imgScale < 0.5) {
-            gsap.set(marquee, { opacity: 1 });
-          } else {
-            gsap.set(marquee, { opacity: 0 });
-          }
-        }
-
-        if (progress >= 1 && !introRevealed) {
-          introRevealed = true;
-          animateContentIn(titleChars, description);
-        }
-        if (progress < 1 && introRevealed) {
-          introRevealed = false;
-          animateContentOut(titleChars, description);
-        }
-      },
-    });
-
-    // Pin each card
-    cards.forEach((card, index) => {
-      const isLastCard = index === cards.length - 1;
-      ScrollTrigger.create({
-        trigger: card,
-        start: "top top",
-        end: isLastCard ? "+=100vh" : "top top",
-        endTrigger: isLastCard ? undefined : cards[cards.length - 1],
-        pin: true,
-        pinSpacing: isLastCard,
-      });
-    });
-
-    // Scale + fade out preceding cards
-    cards.forEach((card, index) => {
-      if (index < cards.length - 1) {
-        const cardWrapper = card.querySelector<HTMLElement>(".card-wrapper");
-        ScrollTrigger.create({
-          trigger: cards[index + 1],
-          start: "top bottom",
-          end: "top top",
-          onUpdate: (self) => {
-            if (cardWrapper) {
-              gsap.set(cardWrapper, {
-                scale: 1 - self.progress * 0.25,
-                opacity: 1 - self.progress,
-              });
-            }
-          },
-        });
+      if ("fonts" in document) {
+        await document.fonts.ready;
       }
-    });
+      if (cancelled) return;
 
-    // Image scale-in as card enters
-    cards.forEach((card, index) => {
-      if (index > 0) {
-        const img = card.querySelector<HTMLElement>(".card-img img");
-        const imgContainer = card.querySelector<HTMLElement>(".card-img");
+      lenis = new Lenis();
+      lenis.on("scroll", ScrollTrigger.update);
+      updateLenis = (time: number) => lenis?.raf(time * 1000);
+      gsap.ticker.add(updateLenis);
+      gsap.ticker.lagSmoothing(0);
+
+      const container = containerRef.current;
+      if (!container) return;
+
+      const cards = gsap.utils.toArray<HTMLElement>(".card", container);
+      const introCard = cards[0];
+
+      const titles = gsap.utils.toArray<HTMLElement>(".card-title h1", container);
+      titles.forEach((title) => {
+        const split = new SplitText(title, {
+          type: "chars",
+          charsClass: "char",
+          tag: "div",
+        });
+        split.chars.forEach((char) => {
+          char.innerHTML = `<span>${char.textContent}</span>`;
+        });
+      });
+
+      const cardImgWrapper = introCard.querySelector<HTMLElement>(".card-img");
+      const cardImg = introCard.querySelector<HTMLElement>(".card-img img");
+      if (cardImgWrapper)
+        gsap.set(cardImgWrapper, { scale: 0.5, borderRadius: "400px" });
+      if (cardImg) gsap.set(cardImg, { scale: 1.5 });
+
+      const marquee = introCard.querySelector<HTMLElement>(
+        ".card-marquee .marquee",
+      );
+      const titleChars = introCard.querySelectorAll<HTMLElement>(".char span");
+      const description =
+        introCard.querySelector<HTMLElement>(".card-description");
+
+      let introRevealed = false;
+
+      ScrollTrigger.create({
+        trigger: introCard,
+        start: "top top",
+        end: "+=300vh",
+        onUpdate: (self) => {
+          const progress = self.progress;
+          const imgScale = 0.5 + progress * 0.5;
+          const borderRadius = 400 - progress * 375;
+          const innerImgScale = 1.5 - progress * 0.5;
+
+          if (cardImgWrapper)
+            gsap.set(cardImgWrapper, {
+              scale: imgScale,
+              borderRadius: `${borderRadius}px`,
+            });
+          if (cardImg) gsap.set(cardImg, { scale: innerImgScale });
+
+          if (marquee) {
+            if (imgScale >= 0.5 && imgScale <= 0.75) {
+              gsap.set(marquee, { opacity: 1 - (imgScale - 0.5) / 0.25 });
+            } else if (imgScale < 0.5) {
+              gsap.set(marquee, { opacity: 1 });
+            } else {
+              gsap.set(marquee, { opacity: 0 });
+            }
+          }
+
+          if (progress >= 1 && !introRevealed) {
+            introRevealed = true;
+            animateContentIn(titleChars, description);
+          }
+          if (progress < 1 && introRevealed) {
+            introRevealed = false;
+            animateContentOut(titleChars, description);
+          }
+        },
+      });
+
+      cards.forEach((card, index) => {
+        const isLastCard = index === cards.length - 1;
         ScrollTrigger.create({
           trigger: card,
-          start: "top bottom",
-          end: "top top",
-          onUpdate: (self) => {
-            if (img) gsap.set(img, { scale: 2 - self.progress });
-            if (imgContainer)
-              gsap.set(imgContainer, {
-                borderRadius: `${150 - self.progress * 125}px`,
-              });
-          },
+          start: "top top",
+          end: isLastCard ? "+=100vh" : "top top",
+          endTrigger: isLastCard ? undefined : cards[cards.length - 1],
+          pin: true,
+          pinSpacing: isLastCard,
         });
-      }
-    });
-
-    // Animate content in/out per card
-    cards.forEach((card, index) => {
-      if (index === 0) return;
-      const cardDescription =
-        card.querySelector<HTMLElement>(".card-description");
-      const cardTitleChars = card.querySelectorAll<HTMLElement>(".char span");
-      ScrollTrigger.create({
-        trigger: card,
-        start: "top top",
-        onEnter: () => animateContentIn(cardTitleChars, cardDescription),
-        onLeaveBack: () => animateContentOut(cardTitleChars, cardDescription),
       });
-    });
 
-    setupMarqueeAnimation();
+      cards.forEach((card, index) => {
+        if (index < cards.length - 1) {
+          const cardWrapper = card.querySelector<HTMLElement>(".card-wrapper");
+          ScrollTrigger.create({
+            trigger: cards[index + 1],
+            start: "top bottom",
+            end: "top top",
+            onUpdate: (self) => {
+              if (cardWrapper) {
+                gsap.set(cardWrapper, {
+                  scale: 1 - self.progress * 0.25,
+                  opacity: 1 - self.progress,
+                });
+              }
+            },
+          });
+        }
+      });
 
-    // Cleanup
+      cards.forEach((card, index) => {
+        if (index > 0) {
+          const img = card.querySelector<HTMLElement>(".card-img img");
+          const imgContainer = card.querySelector<HTMLElement>(".card-img");
+          ScrollTrigger.create({
+            trigger: card,
+            start: "top bottom",
+            end: "top top",
+            onUpdate: (self) => {
+              if (img) gsap.set(img, { scale: 2 - self.progress });
+              if (imgContainer)
+                gsap.set(imgContainer, {
+                  borderRadius: `${150 - self.progress * 125}px`,
+                });
+            },
+          });
+        }
+      });
+
+      cards.forEach((card, index) => {
+        if (index === 0) return;
+        const cardDescription =
+          card.querySelector<HTMLElement>(".card-description");
+        const cardTitleChars = card.querySelectorAll<HTMLElement>(".char span");
+        ScrollTrigger.create({
+          trigger: card,
+          start: "top top",
+          onEnter: () => animateContentIn(cardTitleChars, cardDescription),
+          onLeaveBack: () => animateContentOut(cardTitleChars, cardDescription),
+        });
+      });
+
+      setupMarqueeAnimation();
+    };
+
+    void init();
+
     return () => {
+      cancelled = true;
       ScrollTrigger.getAll().forEach((t) => t.kill());
-      lenis.destroy();
-      gsap.ticker.remove(updateLenis);
+      lenis?.destroy();
+      if (updateLenis) {
+        gsap.ticker.remove(updateLenis);
+      }
     };
   }, []);
 

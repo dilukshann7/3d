@@ -3,6 +3,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import "./Footer.css";
 import Copy from "../components/Copy";
+import { assetUrl } from "../utils/assetUrl";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -28,7 +29,15 @@ const Footer: React.FC = () => {
   }, []);
 
   return (
-    <footer className="site-footer" ref={footerRef}>
+    <footer
+      className="site-footer"
+      ref={footerRef}
+      style={
+        {
+          "--footer-bg-image": `url("${assetUrl("footer.png")}")`,
+        } as React.CSSProperties
+      }
+    >
       <div className="footer-wrapper" ref={containerRef}>
         <div className="footer-inner">
           <div className="footer-row">
