@@ -37,7 +37,67 @@ type FrameData = {
   centerY: number;
 };
 
-function Loader() {
+type SurfaceTextureSelection = {
+  surface: "metal" | "glass";
+  texture?: ModelTextureOption;
+  targets?: ModelMetalTextureTargets;
+};
+
+type MatKind = "glass" | "water" | "concrete" | "metal" | "generic";
+
+type PreparedMaterial = THREE.MeshStandardMaterial & THREE.MeshPhysicalMaterial;
+
+type MaterialSnapshot = {
+  kind: MatKind;
+  color: string;
+  map: THREE.Texture | null;
+  roughnessMap: THREE.Texture | null;
+  metalnessMap: THREE.Texture | null;
+  normalMap: THREE.Texture | null;
+  bumpMap: THREE.Texture | null;
+  bumpScale: number;
+  normalScale: THREE.Vector2;
+  metalness: number;
+  roughness: number;
+  reflectivity: number;
+  envMapIntensity: number;
+  clearcoat: number;
+  clearcoatRoughness: number;
+  transmission: number;
+  opacity: number;
+  transparent: boolean;
+  side: THREE.Side;
+};
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const EMPTY_TEXTURE_OPTIONS: ModelTextureOption[] = [];
+
+const GLASS = {
+  BASE_COLOR: "#ffffff",
+  ROUGHNESS: 0.05,
+  TRANSMISSION: 0.98,
+  THICKNESS: 0.12,
+  REFLECTIVITY: 0.55,
+  ENV_INTENSITY: 0.18,
+  CLEARCOAT: 0.45,
+  CLEARCOAT_ROUGHNESS: 0.12,
+} as const;
+
+const DEFAULT_FRAME: FrameData = {
+  height: 2,
+  radius: 1,
+  boundingRadius: 1.35,
+  centerY: 1,
+};
+
+// ─── Shared texture loader (one instance, lives for app lifetime) ──────────────
+
+const imageTextureLoader = new THREE.TextureLoader();
+
+// ─── Loader ───────────────────────────────────────────────────────────────────
+
+const Loader = memo(function Loader() {
   const { progress } = useProgress();
   const width = Math.round(progress);
   return (
@@ -56,242 +116,396 @@ function Loader() {
       </div>
     </Html>
   );
+});
+
+// ─── Icons (memoised, zero props = stable reference) ─────────────────────────
+
+const PlayIcon = memo(() => (
+  <svg className="h-3.5 w-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+    <path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+  </svg>
+));
+const PauseIcon = memo(() => (
+  <svg className="h-3.5 w-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+    <path
+      fillRule="evenodd"
+      d="M6 4a1 1 0 00-1 1v10a1 1 0 102 0V5a1 1 0 00-1-1zm8 0a1 1 0 00-1 1v10a1 1 0 102 0V5a1 1 0 00-1-1z"
+      clipRule="evenodd"
+    />
+  </svg>
+));
+const RewindIcon = memo(() => (
+  <svg className="h-3.5 w-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+    <path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z" />
+  </svg>
+));
+const RotateIcon = memo(() => (
+  <svg
+    className="h-3.5 w-3.5 shrink-0"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={1.8}
+      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+    />
+  </svg>
+));
+const WireframeIcon = memo(() => (
+  <svg
+    className="h-3.5 w-3.5 shrink-0"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={1.8}
+      d="M12 3l9 5.5-9 5.5-9-5.5L12 3zm0 0v11m9-5.5v5.5L12 20l-9-5.5V9"
+    />
+  </svg>
+));
+const ResetIcon = memo(() => (
+  <svg
+    className="h-3.5 w-3.5 shrink-0"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={1.8}
+      d="M3 12a9 9 0 109-9M3 12V7m0 5H8"
+    />
+  </svg>
+));
+
+// ─── Material helpers ─────────────────────────────────────────────────────────
+
+/**
+ * Per-scene caches. Stored on the scene's userData so they're naturally
+ * scoped to one model load and GC'd when the scene is disposed.
+ */
+function getSceneCaches(root: THREE.Object3D) {
+  const data = root.userData as {
+    _upgradedMaterials?: WeakSet<THREE.Material>;
+    _materialSnapshots?: WeakMap<THREE.Material, MaterialSnapshot>;
+    _meshSizeCache?: WeakMap<THREE.Mesh, THREE.Vector3>;
+    _textureCache?: Map<string, THREE.Texture>;
+  };
+  data._upgradedMaterials ??= new WeakSet();
+  data._materialSnapshots ??= new WeakMap();
+  data._meshSizeCache ??= new WeakMap();
+  data._textureCache ??= new Map();
+  return {
+    upgradedMaterials: data._upgradedMaterials,
+    materialSnapshots: data._materialSnapshots,
+    meshSizeCache: data._meshSizeCache,
+    textureCache: data._textureCache,
+  };
 }
 
-type MatKind = "glass" | "water" | "concrete" | "metal" | "generic";
+function getCachedTexture(
+  cache: Map<string, THREE.Texture>,
+  url: string,
+  repeat?: [number, number],
+  srgb = false,
+): THREE.Texture {
+  const [rx, ry] = repeat ?? [1, 1];
+  const key = `${url}|${rx}|${ry}|${srgb}`;
+  let tex = cache.get(key);
+  if (!tex) {
+    tex = imageTextureLoader.load(url);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(rx, ry);
+    if (srgb) tex.colorSpace = THREE.SRGBColorSpace;
+    tex.needsUpdate = true;
+    cache.set(key, tex);
+  }
+  return tex;
+}
 
 function classifyMaterial(
   mesh: THREE.Mesh,
   mat: THREE.Material & Partial<THREE.MeshStandardMaterial>,
 ): MatKind {
-  const matName = (mat.name ?? "").toLowerCase();
-  const meshName = (mesh.name ?? "").toLowerCase();
-  const parentName = (mesh.parent?.name ?? "").toLowerCase();
-  const names = [matName, meshName, parentName];
+  const names = [mat.name, mesh.name, mesh.parent?.name ?? ""].map((n) =>
+    (n ?? "").toLowerCase(),
+  );
 
-  const glassKeywords = ["glass", "window", "vitr", "glazing", "crystal"];
-  if (names.some((n) => glassKeywords.some((k) => n.includes(k))))
+  if (names.some((n) => /glass|window|vitr|glazing|crystal/.test(n)))
     return "glass";
-
-  const concreteKeywords = [
-    "concrete", "cement", "stone", "urban", "pavement", "floor",
-    "ground", "sol", "dalle", "terr",
-  ];
-  if (names.some((n) => concreteKeywords.some((k) => n.includes(k))))
+  if (
+    names.some((n) =>
+      /concrete|cement|stone|urban|pavement|floor|ground|sol|dalle|terr/.test(
+        n,
+      ),
+    )
+  )
     return "concrete";
-
-  const metalKeywords = ["metal", "steel", "alumin", "iron", "chrome", "zinc"];
-  if (names.some((n) => metalKeywords.some((k) => n.includes(k))))
+  if (names.some((n) => /metal|steel|alumin|iron|chrome|zinc/.test(n)))
     return "metal";
-
   if (mat.transparent && (mat.opacity ?? 1) < 0.9) return "glass";
 
   const color = (mat as THREE.MeshStandardMaterial).color;
   if (color) {
-    const r = color.r;
-    const g = color.g;
-    const b = color.b;
-
+    const { r, g, b } = color;
     if (r > 0.82 && g > 0.82 && b > 0.82) return "glass";
     if (b > 0.8 && g > 0.8 && r < 0.15) return "glass";
-
-    const isWaterBlue =
+    if (
       b > 0.45 &&
       (b > r * 1.25 || g > r * 1.25) &&
       r < 0.72 &&
-      !(r > 0.78 && g > 0.78);
-    if (isWaterBlue) return "water";
-
+      !(r > 0.78 && g > 0.78)
+    )
+      return "water";
     const lum = (r + g + b) / 3;
-    const isConcreteGrey =
-      lum > 0.55 && Math.abs(r - g) < 0.12 && Math.abs(g - b) < 0.16 && b >= r;
-    if (isConcreteGrey) return "concrete";
-
+    if (
+      lum > 0.55 &&
+      Math.abs(r - g) < 0.12 &&
+      Math.abs(g - b) < 0.16 &&
+      b >= r
+    )
+      return "concrete";
     if (r < 0.08 && g < 0.08 && b < 0.08) return "metal";
     if (lum < 0.22 && Math.abs(r - g) < 0.04 && Math.abs(g - b) < 0.04)
       return "metal";
   }
-
   return "generic";
 }
 
-// ─── PERF: Material builders are unchanged, but makeReflective now
-//     mutates existing MeshStandardMaterial in-place whenever possible
-//     to avoid allocating new GPU resources.
-function buildGlassMat(): THREE.MeshPhysicalMaterial {
-  return new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color(0xffffff),
-    metalness: 0,
-    roughness: 0,
-    transmission: 0.94,
-    thickness: 0.35,
-    ior: 1.52,
-    reflectivity: 1,
-    envMapIntensity: 1.2,
-    clearcoat: 1,
-    clearcoatRoughness: 0,
-    transparent: true,
-    opacity: 1,
-    side: THREE.DoubleSide,
-  });
-}
-
-function buildWaterMat(originalColor: THREE.Color): THREE.MeshPhysicalMaterial {
-  return new THREE.MeshPhysicalMaterial({
-    color: originalColor.clone().lerp(new THREE.Color(0x0a2a4a), 0.35),
-    metalness: 0,
-    roughness: 0,
-    transmission: 0.88,
-    thickness: 1.2,
-    ior: 1.333,
-    reflectivity: 1,
-    envMapIntensity: 1.5,
-    clearcoat: 1,
-    clearcoatRoughness: 0,
-    transparent: true,
-    opacity: 0.92,
-    side: THREE.DoubleSide,
-  });
-}
-
-function buildConcreteMat(
-  originalColor: THREE.Color,
-  map: THREE.Texture | null,
+/** Mutate-in-place for MeshPhysicalMaterial; otherwise build a new one. */
+function upgradeToPhysical(
+  mat: THREE.Material,
+  kind: MatKind,
 ): THREE.MeshPhysicalMaterial {
-  const concreteColor = originalColor.clone();
-  concreteColor.r = Math.min(1, concreteColor.r * 1.08);
-  concreteColor.g = Math.min(1, concreteColor.g * 1.04);
-  concreteColor.b = Math.min(1, concreteColor.b * 0.88);
-  return new THREE.MeshPhysicalMaterial({
-    color: concreteColor,
-    map,
-    metalness: 0,
-    roughness: 0.88,
-    reflectivity: 0.05,
-    envMapIntensity: 0.2,
-    clearcoat: 0.04,
-    clearcoatRoughness: 0.9,
-    transparent: false,
-    side: THREE.FrontSide,
-  });
+  const old = mat as THREE.MeshStandardMaterial &
+    THREE.MeshBasicMaterial &
+    THREE.MeshPhysicalMaterial;
+  const origColor =
+    (old.color as THREE.Color | undefined)?.clone() ??
+    new THREE.Color(0xffffff);
+  const map = old.map ?? null;
+
+  if (old.isMeshPhysicalMaterial) {
+    old.userData = {
+      ...(old.userData ?? {}),
+      originalMaterialName:
+        (old.userData?.originalMaterialName as string | undefined) ??
+        old.name ??
+        "",
+    };
+    // Mutate in-place — avoids new GPU resource allocation
+    switch (kind) {
+      case "glass":
+        old.color.set(GLASS.BASE_COLOR);
+        old.metalness = 0;
+        old.roughness = GLASS.ROUGHNESS;
+        old.transmission = GLASS.TRANSMISSION;
+        old.thickness = GLASS.THICKNESS;
+        old.ior = 1.52;
+        old.reflectivity = GLASS.REFLECTIVITY;
+        old.clearcoat = GLASS.CLEARCOAT;
+        old.clearcoatRoughness = GLASS.CLEARCOAT_ROUGHNESS;
+        old.envMapIntensity = GLASS.ENV_INTENSITY;
+        old.transparent = true;
+        old.opacity = 1;
+        old.side = THREE.DoubleSide;
+        break;
+      case "water":
+        old.color.lerp(new THREE.Color(0x0a2a4a), 0.35);
+        old.metalness = 0;
+        old.roughness = 0;
+        old.transmission = 0.88;
+        old.thickness = 1.2;
+        old.ior = 1.333;
+        old.reflectivity = 1;
+        old.clearcoat = 1;
+        old.clearcoatRoughness = 0;
+        old.envMapIntensity = 1.5;
+        old.transparent = true;
+        old.opacity = 0.92;
+        old.side = THREE.DoubleSide;
+        break;
+      case "concrete":
+        old.color.r = Math.min(1, old.color.r * 1.08);
+        old.color.g = Math.min(1, old.color.g * 1.04);
+        old.color.b = Math.min(1, old.color.b * 0.88);
+        old.metalness = 0;
+        old.roughness = 0.88;
+        old.reflectivity = 0.05;
+        old.clearcoat = 0.04;
+        old.clearcoatRoughness = 0.9;
+        old.envMapIntensity = 0.2;
+        old.transparent = false;
+        break;
+      case "metal":
+        old.metalness = 0.88;
+        old.roughness = 0.22;
+        old.reflectivity = 0.8;
+        old.clearcoat = 0.3;
+        old.clearcoatRoughness = 0.15;
+        old.envMapIntensity = 1.0;
+        old.transparent = false;
+        break;
+      default:
+        old.metalness = Math.max(old.metalness, 0.3);
+        old.roughness = Math.min(old.roughness, 0.55);
+        old.reflectivity = 0.4;
+        old.clearcoat = 0.08;
+        old.clearcoatRoughness = 0.4;
+        old.envMapIntensity = 0.6;
+    }
+    old.needsUpdate = true;
+    return old;
+  }
+
+  // Build a new physical material and dispose the old one
+  let next: THREE.MeshPhysicalMaterial;
+  switch (kind) {
+    case "glass":
+      next = new THREE.MeshPhysicalMaterial({
+        color: new THREE.Color(GLASS.BASE_COLOR),
+        metalness: 0,
+        roughness: GLASS.ROUGHNESS,
+        transmission: GLASS.TRANSMISSION,
+        thickness: GLASS.THICKNESS,
+        ior: 1.52,
+        reflectivity: GLASS.REFLECTIVITY,
+        envMapIntensity: GLASS.ENV_INTENSITY,
+        clearcoat: GLASS.CLEARCOAT,
+        clearcoatRoughness: GLASS.CLEARCOAT_ROUGHNESS,
+        transparent: true,
+        opacity: 1,
+        side: THREE.DoubleSide,
+      });
+      break;
+    case "water":
+      next = new THREE.MeshPhysicalMaterial({
+        color: origColor.clone().lerp(new THREE.Color(0x0a2a4a), 0.35),
+        metalness: 0,
+        roughness: 0,
+        transmission: 0.88,
+        thickness: 1.2,
+        ior: 1.333,
+        reflectivity: 1,
+        envMapIntensity: 1.5,
+        clearcoat: 1,
+        clearcoatRoughness: 0,
+        transparent: true,
+        opacity: 0.92,
+        side: THREE.DoubleSide,
+      });
+      break;
+    case "concrete": {
+      const c = origColor.clone();
+      c.r = Math.min(1, c.r * 1.08);
+      c.g = Math.min(1, c.g * 1.04);
+      c.b = Math.min(1, c.b * 0.88);
+      next = new THREE.MeshPhysicalMaterial({
+        color: c,
+        map,
+        metalness: 0,
+        roughness: 0.88,
+        reflectivity: 0.05,
+        envMapIntensity: 0.2,
+        clearcoat: 0.04,
+        clearcoatRoughness: 0.9,
+        transparent: false,
+        side: THREE.FrontSide,
+      });
+      break;
+    }
+    case "metal":
+      next = new THREE.MeshPhysicalMaterial({
+        color: origColor,
+        map,
+        metalness: 0.88,
+        roughness: 0.22,
+        reflectivity: 0.8,
+        envMapIntensity: 0.6,
+        clearcoat: 0.3,
+        clearcoatRoughness: 0.15,
+        transparent: false,
+        side: THREE.FrontSide,
+      });
+      break;
+    default:
+      next = new THREE.MeshPhysicalMaterial({
+        color: origColor,
+        map,
+        metalness: 0.1,
+        roughness: 0.65,
+        reflectivity: 0.15,
+        envMapIntensity: 0.5,
+        clearcoat: 0.08,
+        clearcoatRoughness: 0.4,
+        transparent: false,
+        side: old.side ?? THREE.FrontSide,
+      });
+  }
+  const originalMaterialName = old.name ?? "";
+  const originalUserData = { ...(old.userData ?? {}) };
+  old.dispose();
+  next.name = originalMaterialName;
+  next.userData = {
+    ...originalUserData,
+    originalMaterialName,
+  };
+  return next;
 }
 
-function buildMetalMat(
-  originalColor: THREE.Color,
-  map: THREE.Texture | null,
-): THREE.MeshPhysicalMaterial {
-  return new THREE.MeshPhysicalMaterial({
-    color: originalColor,
-    map,
-    metalness: 0.88,
-    roughness: 0.22,
-    reflectivity: 0.8,
-    envMapIntensity: 0.6,
-    clearcoat: 0.3,
-    clearcoatRoughness: 0.15,
-    transparent: false,
-    side: THREE.FrontSide,
-  });
+function snapshotMaterial(mat: PreparedMaterial): MaterialSnapshot {
+  return {
+    kind: "generic", // will be overwritten by caller
+    color: `#${mat.color.getHexString()}`,
+    map: mat.map ?? null,
+    roughnessMap: mat.roughnessMap ?? null,
+    metalnessMap: mat.metalnessMap ?? null,
+    normalMap: mat.normalMap ?? null,
+    bumpMap: mat.bumpMap ?? null,
+    bumpScale: mat.bumpScale ?? 1,
+    normalScale: mat.normalScale?.clone?.() ?? new THREE.Vector2(1, 1),
+    metalness: mat.metalness ?? 0,
+    roughness: mat.roughness ?? 1,
+    reflectivity: mat.reflectivity ?? 0.5,
+    envMapIntensity: mat.envMapIntensity ?? 1,
+    clearcoat: mat.clearcoat ?? 0,
+    clearcoatRoughness: mat.clearcoatRoughness ?? 0,
+    transmission: mat.transmission ?? 0,
+    opacity: mat.opacity ?? 1,
+    transparent: mat.transparent,
+    side: mat.side,
+  };
 }
-
-function buildGenericMat(
-  originalColor: THREE.Color,
-  map: THREE.Texture | null,
-  oldSide: THREE.Side,
-): THREE.MeshPhysicalMaterial {
-  return new THREE.MeshPhysicalMaterial({
-    color: originalColor,
-    map,
-    metalness: 0.1,
-    roughness: 0.65,
-    reflectivity: 0.15,
-    envMapIntensity: 0.5,
-    clearcoat: 0.08,
-    clearcoatRoughness: 0.4,
-    transparent: false,
-    side: oldSide,
-  });
-}
-
-// ─── PERF: Track upgraded materials to skip on re-runs (e.g. wireframe toggle)
-const upgradedMaterials = new WeakSet<THREE.Material>();
 
 function makeReflective(root: THREE.Object3D) {
+  const { upgradedMaterials, materialSnapshots } = getSceneCaches(root);
+
   root.traverse((child) => {
     const mesh = child as THREE.Mesh;
     if (!mesh.isMesh) return;
-
     mesh.castShadow = true;
     mesh.receiveShadow = true;
 
     const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     const upgraded = mats.map((mat) => {
-      // PERF: Skip already-upgraded materials
       if (upgradedMaterials.has(mat)) return mat;
-
-      const old = mat as THREE.MeshStandardMaterial &
-        THREE.MeshBasicMaterial &
-        THREE.MeshPhysicalMaterial;
-
-      const kind = classifyMaterial(mesh, old);
-      const originalColor =
-        (old.color as THREE.Color | undefined)?.clone() ?? new THREE.Color(0xffffff);
-      const map = old.map ?? null;
-
-      let result: THREE.Material;
-
-      if (old.isMeshPhysicalMaterial) {
-        // Mutate in-place — no new GPU object
-        switch (kind) {
-          case "glass":
-            old.color.set(0xffffff); old.metalness = 0; old.roughness = 0;
-            old.transmission = 0.94; old.thickness = 0.35; old.ior = 1.52;
-            old.reflectivity = 1; old.clearcoat = 1; old.clearcoatRoughness = 0;
-            old.envMapIntensity = 1.2; old.transparent = true; old.opacity = 1;
-            old.side = THREE.DoubleSide;
-            break;
-          case "water":
-            old.color.lerp(new THREE.Color(0x0a2a4a), 0.35); old.metalness = 0;
-            old.roughness = 0; old.transmission = 0.88; old.thickness = 1.2;
-            old.ior = 1.333; old.reflectivity = 1; old.clearcoat = 1;
-            old.clearcoatRoughness = 0; old.envMapIntensity = 1.5;
-            old.transparent = true; old.opacity = 0.92; old.side = THREE.DoubleSide;
-            break;
-          case "concrete":
-            old.color.r = Math.min(1, old.color.r * 1.08);
-            old.color.g = Math.min(1, old.color.g * 1.04);
-            old.color.b = Math.min(1, old.color.b * 0.88);
-            old.metalness = 0; old.roughness = 0.88; old.reflectivity = 0.05;
-            old.clearcoat = 0.04; old.clearcoatRoughness = 0.9;
-            old.envMapIntensity = 0.2; old.transparent = false;
-            break;
-          case "metal":
-            old.metalness = 0.88; old.roughness = 0.22; old.reflectivity = 0.8;
-            old.clearcoat = 0.3; old.clearcoatRoughness = 0.15;
-            old.envMapIntensity = 1.0; old.transparent = false;
-            break;
-          default:
-            old.metalness = Math.max(old.metalness, 0.3);
-            old.roughness = Math.min(old.roughness, 0.55);
-            old.reflectivity = 0.4; old.clearcoat = 0.08;
-            old.clearcoatRoughness = 0.4; old.envMapIntensity = 0.6;
-            break;
-        }
-        old.needsUpdate = true;
-        result = old;
-      } else {
-        switch (kind) {
-          case "glass":   result = buildGlassMat(); break;
-          case "water":   result = buildWaterMat(originalColor); break;
-          case "concrete": result = buildConcreteMat(originalColor, map); break;
-          case "metal":   result = buildMetalMat(originalColor, map); break;
-          default:        result = buildGenericMat(originalColor, map, old.side ?? THREE.FrontSide); break;
-        }
-        // Dispose the old material to free GPU memory
-        old.dispose();
-      }
-
+      const kind = classifyMaterial(
+        mesh,
+        mat as THREE.Material & Partial<THREE.MeshStandardMaterial>,
+      );
+      const result = upgradeToPhysical(mat, kind);
       upgradedMaterials.add(result);
+
+      const snap = snapshotMaterial(result as PreparedMaterial);
+      snap.kind = kind;
+      materialSnapshots.set(result, snap);
       return result;
     });
 
