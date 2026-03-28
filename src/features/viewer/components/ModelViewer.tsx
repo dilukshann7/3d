@@ -1180,36 +1180,40 @@ export default function ModelViewer({
               className="pointer-events-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/8 bg-white/5 text-slate-300 transition duration-200 hover:border-white/16 hover:bg-white/10 hover:text-white"
               aria-label="Back to catalog"
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 19l-7-7 7-7" />
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.8}
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
             </button>
-
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="font-[IBM_Plex_Sans] text-[15px] font-semibold tracking-tight text-white sm:text-base">
-                  {model.name}
-                </h1>
-              </div>
-            </div>
+            <h1 className="font-[IBM_Plex_Sans] text-[15px] font-semibold tracking-tight text-white sm:text-base">
+              {model.name}
+            </h1>
           </div>
-
           <div className="hidden shrink-0 rounded-full border border-white/8 bg-white/4 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.26em] text-slate-100 lg:block">
             Drag · Scroll · Pinch
           </div>
         </div>
       </header>
 
+      {/* Left panel */}
       <aside className="absolute bottom-4 left-4 z-20 sm:bottom-5 sm:left-5 lg:bottom-6 lg:left-7">
         <div className="pointer-events-auto w-full max-h-[calc(100vh-8rem)] overflow-y-auto no-scrollbar rounded-2xl border border-white/8 bg-slate-950/65 p-3.5 shadow-[0_16px_48px_rgba(2,6,23,0.5)] backdrop-blur-xl sm:w-72 sm:p-4">
-
           {model.description && (
             <p className="mb-4 text-xs leading-relaxed text-slate-300">
               {model.description}
             </p>
           )}
 
-          {model.specs && model.specs.length > 0 && (
+          {!!model.specs?.length && (
             <div className="mb-5 rounded-xl border border-white/5 bg-white/5 p-3">
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                 Specifications
@@ -1218,7 +1222,9 @@ export default function ModelViewer({
                 {model.specs.map((s, i) => (
                   <div key={i} className="flex justify-between text-xs">
                     <span className="text-slate-400">{s.label}</span>
-                    <span className="font-medium text-slate-200">{s.value}</span>
+                    <span className="font-medium text-slate-200">
+                      {s.value}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -1227,7 +1233,7 @@ export default function ModelViewer({
 
           {model.variants.length > 1 && (
             <div className="mb-4">
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-600">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-400">
                 Variant
               </p>
               <div className="grid gap-1.5 sm:grid-cols-2">
@@ -1239,7 +1245,7 @@ export default function ModelViewer({
                       setPlaying(false);
                       setReversed(false);
                     }}
-                    className={variantIdx === i ? btnActive : btnDefault}
+                    className={variantIdx === i ? BTN_ACTIVE : BTN_DEFAULT}
                   >
                     {v.label}
                   </button>
@@ -1251,38 +1257,62 @@ export default function ModelViewer({
           <div className="grid grid-cols-2 gap-1.5">
             <button
               onClick={() => setPlaying((v) => !v)}
-              className={playing ? btnActive : btnDefault}
+              className={playing ? BTN_ACTIVE : BTN_DEFAULT}
             >
-              {playing ? (<><PauseIcon /> Pause</>) : reversed ? (<><RewindIcon /> Rewind</>) : (<><PlayIcon /> Play</>)}
+              {playing ? (
+                <>
+                  <PauseIcon /> Pause
+                </>
+              ) : reversed ? (
+                <>
+                  <RewindIcon /> Rewind
+                </>
+              ) : (
+                <>
+                  <PlayIcon /> Play
+                </>
+              )}
             </button>
-
             <button
               onClick={() => setAutoRotate((v) => !v)}
-              className={autoRotate ? btnActive : btnDefault}
+              className={autoRotate ? BTN_ACTIVE : BTN_DEFAULT}
             >
               <RotateIcon />
               {autoRotate ? "Stop spin" : "Rotate"}
             </button>
-
             <button
               onClick={() => setWireframe((v) => !v)}
-              className={wireframe ? btnActive : btnDefault}
+              className={wireframe ? BTN_ACTIVE : BTN_DEFAULT}
             >
               <WireframeIcon /> Wireframe
             </button>
-
-            <button onClick={resetCamera} className={btnDefault}>
+            <button onClick={resetCamera} className={BTN_DEFAULT}>
               <ResetIcon /> Reset view
             </button>
           </div>
 
           <div className="mt-4 flex flex-col gap-2">
             <button
-              onClick={() => navigate({ to: ROUTES.galleryById, params: { modelId: model.id } })}
+              onClick={() =>
+                navigate({
+                  to: ROUTES.galleryById,
+                  params: { modelId: model.id },
+                })
+              }
               className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-sky-400/30 bg-sky-400/10 px-3.5 py-3 text-[13px] font-semibold tracking-wide text-sky-300 transition duration-200 hover:bg-sky-400/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.8}
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
               </svg>
               View gallery
             </button>
@@ -1290,8 +1320,18 @@ export default function ModelViewer({
               href="mailto:contact@example.com?subject=Build My 3D Website"
               className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-3.5 py-3 text-[13px] font-semibold tracking-wide text-emerald-300 transition duration-200 hover:bg-emerald-400/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.8}
+                  d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                />
               </svg>
               Make your own 3d website
             </a>
@@ -1299,13 +1339,71 @@ export default function ModelViewer({
 
           <div
             className="mt-3.5 h-px w-full rounded-full opacity-30"
-            style={{ background: `linear-gradient(90deg, transparent, ${model.accent}, transparent)` }}
+            style={{
+              background: `linear-gradient(90deg, transparent, ${model.accent}, transparent)`,
+            }}
           />
           <p className="mt-2 text-center text-[10px] text-slate-600">
             Interactive 3D viewer
           </p>
         </div>
       </aside>
+
+      {/* Right panel (surface options) */}
+      {(metalTextures.length > 0 || glassTextures.length > 0) && (
+        <aside className="absolute bottom-4 right-4 z-20 sm:bottom-5 sm:right-5 lg:bottom-6 lg:right-7">
+          <div className="pointer-events-auto w-full max-h-[calc(100vh-8rem)] overflow-y-auto no-scrollbar rounded-2xl border border-white/8 bg-slate-950/65 p-3.5 shadow-[0_16px_48px_rgba(2,6,23,0.5)] backdrop-blur-xl sm:w-72 sm:p-4">
+            {metalTextures.length > 0 && (
+              <div className="mb-4">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-400">
+                  Metal
+                </p>
+                <div className="grid gap-1.5 sm:grid-cols-2">
+                  {metalTextures.map((texture, i) => (
+                    <button
+                      key={texture.label}
+                      onClick={() => setMetalTextureIdx(i)}
+                      className={
+                        metalTextureIdx === i ? BTN_ACTIVE : BTN_DEFAULT
+                      }
+                    >
+                      <span
+                        className="h-3 w-3 shrink-0 rounded-full border border-white/15"
+                        style={{ backgroundColor: texture.swatch }}
+                      />
+                      {texture.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {glassTextures.length > 0 && (
+              <div className="mb-4">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-400">
+                  Glass
+                </p>
+                <div className="grid gap-1.5 sm:grid-cols-2">
+                  {glassTextures.map((texture, i) => (
+                    <button
+                      key={texture.label}
+                      onClick={() => setGlassTextureIdx(i)}
+                      className={
+                        glassTextureIdx === i ? BTN_ACTIVE : BTN_DEFAULT
+                      }
+                    >
+                      <span
+                        className="h-3 w-3 shrink-0 rounded-full border border-white/15"
+                        style={{ backgroundColor: texture.swatch }}
+                      />
+                      {texture.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </aside>
+      )}
     </div>
   );
 }

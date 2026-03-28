@@ -134,18 +134,35 @@ export const MODELS: ModelConfig[] = [
       { label: "Protection", value: "Weather & UV" },
     ],
   },
-  
+
   {
     id: "draco",
     name: "Draco",
     description:
       "A modern, rotatable dome spa enclosure with a sleek black frame, providing a panoramic, wind-shielded hot tub experience.",
-    image: "/card-img-5-low.jpg",
+    image: assetUrl("card-img-5-low.jpg"),
     accent: "#334155",
-    variants: [{ label: "Standard", glb: "/draco.glb" }],
+    variants: [{ label: "Standard", glb: assetUrl("draco.glb") }],
+    surfaceOptions: {
+      metal: SHARED_METAL_TEXTURES,
+      glass: SHARED_GLASS_TEXTURES,
+    },
+    metalTextureTargets: {
+      materialNames: [
+        "Material",
+        "13___Default",
+        "_midel_2_open03___Default11",
+        "_midel_2_open03___Default",
+        "_midel_2_open04___Default",
+        "_midel_2_open07___Default",
+        "_midel_2_open09___Default",
+      ],
+      nodePrefixes: ["Box", "Circle", "Cube", "Shape", "sub"],
+      excludedNodePrefixes: ["Line"],
+    },
     irlImages: [
-      "/card-img-5-low.jpg",
-      "https://images.unsplash.com/photo-1576013551627-11971f366114?auto=format&fit=crop&q=80&w=1200"
+      assetUrl("card-img-5-low.jpg"),
+      "https://images.unsplash.com/photo-1576013551627-11971f366114?auto=format&fit=crop&q=80&w=1200",
     ],
     specs: [
       { label: "Shape", value: "Rotatable Dome" },
@@ -158,12 +175,21 @@ export const MODELS: ModelConfig[] = [
     name: "Andromeda",
     description:
       "Elegant telescopic glass sunroom featuring a charcoal frame, designed to create a versatile outdoor dining space.",
-    image: "/card-img-6-low.jpg",
+    image: assetUrl("card-img-6-low.jpg"),
     accent: "#0ea5e9",
-    variants: [{ label: "Standard", glb: "/andromeda.glb" }],
+    variants: [{ label: "Standard", glb: assetUrl("andromeda.glb") }],
+    surfaceOptions: {
+      metal: SHARED_METAL_TEXTURES,
+      glass: SHARED_GLASS_TEXTURES,
+    },
+    metalTextureTargets: {
+      materialNames: ["03___Default", "04___Default"],
+      ...BOX_ONLY_TARGETS,
+      excludedNodePrefixes: ["Line", "Plane", "Rectangle", "Archmodels"],
+    },
     irlImages: [
-      "/card-img-6-low.jpg",
-      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=1200"
+      assetUrl("card-img-6-low.jpg"),
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=1200",
     ],
     specs: [
       { label: "Style", value: "Telescopic Sunroom" },
@@ -176,13 +202,27 @@ export const MODELS: ModelConfig[] = [
     name: "Abris Sur Mesure",
     description:
       "A sleek, telescopic glass pool enclosure featuring a retractable charcoal aluminum frame for year-round swimming protection.",
-    image: "/card-img-1-low.jpg",
+    image: assetUrl("card-img-1-low.jpg"),
     accent: "#0f172a",
-    variants: [{ label: "Standard", glb: "/abris.glb" }],
+    variants: [{ label: "Standard", glb: assetUrl("abris.glb") }],
+    surfaceOptions: {
+      metal: SHARED_METAL_TEXTURES,
+      glass: SHARED_GLASS_TEXTURES,
+    },
+    metalTextureTargets: {
+      materialNames: [
+        "02___Default",
+        "07___Default",
+        "08___Default",
+        "15___Default",
+        "18___Default",
+      ],
+      ...BOX_ONLY_TARGETS,
+    },
     irlImages: [
-      "/card-img-1-low.jpg",
+      assetUrl("card-img-1-low.jpg"),
       "https://images.unsplash.com/photo-1576013551627-11971f366114?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=1200"
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=1200",
     ],
     specs: [
       { label: "Material", value: "Telescopic Glass" },
@@ -195,11 +235,25 @@ export const MODELS: ModelConfig[] = [
     name: "Moon Deck",
     description:
       "Innovative sliding deck cover with wooden lounge chairs, designed to maximize patio space and protect pools.",
-    image: "/card-img-2-low.jpg",
+    image: assetUrl("card-img-2-low.jpg"),
     accent: "#78350f",
-    variants: [{ label: "Standard", glb: "/moon.glb" }],
+    variants: [{ label: "Standard", glb: assetUrl("moon.glb") }],
+    surfaceOptions: {
+      metal: SHARED_METAL_TEXTURES,
+      glass: SHARED_GLASS_TEXTURES,
+    },
+    metalTextureTargets: {
+      materialNames: [
+        "_model_9a02___Default",
+        "_model_9a03___Default",
+        "_model_9a05___Default",
+        "_model_9a15___Default",
+      ],
+      nodePrefixes: ["Box", "Cylinder", "Shape"],
+      excludedNodePrefixes: ["Object", "arch"],
+    },
     irlImages: [
-      "/card-img-2-low.jpg",
+      assetUrl("card-img-2-low.jpg"),
       "https://images.unsplash.com/photo-1540544660406-6a69dacb2804?auto=format&fit=crop&q=80&w=1200",
       "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=1200",
     ],
@@ -214,12 +268,20 @@ export const MODELS: ModelConfig[] = [
     name: "Borealis",
     description:
       "Ultra-low profile telescopic pool enclosure with a minimalist gray frame, offering sleek, flat-surface protection and safety.",
-    image: "/card-img-7-low.jpg",
+    image: assetUrl("card-img-7-low.jpg"),
     accent: "#2563eb",
-    variants: [{ label: "Standard", glb: "/borealis.glb" }],
+    variants: [{ label: "Standard", glb: assetUrl("borealis.glb") }],
+    surfaceOptions: {
+      metal: SHARED_METAL_TEXTURES,
+      glass: SHARED_GLASS_TEXTURES,
+    },
+    metalTextureTargets: {
+      materialNameIncludes: ["Metal Textured Black"],
+      ...BOX_AND_SHAPE_TARGETS,
+    },
     irlImages: [
-      "/card-img-7-low.jpg",
-      "https://images.unsplash.com/photo-1540544660406-6a69dacb2804?auto=format&fit=crop&q=80&w=1200"
+      assetUrl("card-img-7-low.jpg"),
+      "https://images.unsplash.com/photo-1540544660406-6a69dacb2804?auto=format&fit=crop&q=80&w=1200",
     ],
     specs: [
       { label: "Profile", value: "Ultra-Low" },
@@ -232,13 +294,31 @@ export const MODELS: ModelConfig[] = [
     name: "Helios",
     description:
       "Contemporary hot tub setup featuring a central wood-paneled spa flanked by two symmetrical, glass-enclosed seating areas.",
-    image: "/card-img-4-low.jpg",
+    image: assetUrl("card-img-4-low.jpg"),
     accent: "#475569",
-    variants: [{ label: "Standard", glb: "/helios.glb" }],
+    variants: [{ label: "Standard", glb: assetUrl("helios.glb") }],
+    surfaceOptions: {
+      metal: SHARED_METAL_TEXTURES,
+      glass: SHARED_GLASS_TEXTURES,
+    },
+    metalTextureTargets: {
+      materialNames: [
+        "02___Default",
+        "03___Default",
+        "05___Default",
+        "07___Default",
+        "09___Default",
+        "10___Default",
+        "11___Default",
+        "12___Default",
+      ],
+      nodePrefixes: ["Arc", "Box", "Shape", "sub"],
+      excludedNodePrefixes: ["Line", "Rectangle"],
+    },
     irlImages: [
-      "/card-img-4-low.jpg",
+      assetUrl("card-img-4-low.jpg"),
       "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=1200"
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=1200",
     ],
     specs: [
       { label: "Setup", value: "Hot Tub & Lounge" },
@@ -251,12 +331,21 @@ export const MODELS: ModelConfig[] = [
     name: "Galaxisis",
     description:
       "A spacious, high-profile telescopic pool enclosure with a black aluminum frame and clear glass gabled roof.",
-    image: "/card-img-8-low.jpg",
+    image: assetUrl("card-img-8-low.jpg"),
     accent: "#14b8a6",
-    variants: [{ label: "Standard", glb: "/galaxisis.glb" }],
+    variants: [{ label: "Standard", glb: assetUrl("galaxisis.glb") }],
+    surfaceOptions: {
+      metal: SHARED_METAL_TEXTURES,
+      glass: SHARED_GLASS_TEXTURES,
+    },
+    metalTextureTargets: {
+      materialNames: ["01___Default", "02___Default", "_model_1015___Default"],
+      ...BOX_AND_SHAPE_TARGETS,
+      excludedNodePrefixes: ["Line", "Rectangle", "Object"],
+    },
     irlImages: [
-      "/card-img-8-low.jpg",
-      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=1200"
+      assetUrl("card-img-8-low.jpg"),
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=1200",
     ],
     specs: [
       { label: "Roof Type", value: "Gabled" },
