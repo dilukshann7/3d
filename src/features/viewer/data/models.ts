@@ -8,6 +8,7 @@ export type ModelConfig = {
   accent: string;
   variants: ModelVariant[];
   irlImages?: string[];
+  specs?: { label: string; value: string }[];
 };
 
 export const MODELS: ModelConfig[] = [
@@ -24,6 +25,11 @@ export const MODELS: ModelConfig[] = [
       "https://images.unsplash.com/photo-1576013551627-11971f366114?auto=format&fit=crop&q=80&w=1200",
       "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=1200"
     ],
+    specs: [
+      { label: "Material", value: "Telescopic Glass" },
+      { label: "Frame", value: "Charcoal Aluminum" },
+      { label: "Usage", value: "Year-Round" },
+    ],
   },
   {
     id: "moon",
@@ -37,6 +43,11 @@ export const MODELS: ModelConfig[] = [
       "/card-img-2-low.jpg",
       "https://images.unsplash.com/photo-1540544660406-6a69dacb2804?auto=format&fit=crop&q=80&w=1200",
       "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=1200",
+    ],
+    specs: [
+      { label: "Surface", value: "Natural Wood" },
+      { label: "System", value: "Sliding Track" },
+      { label: "Load", value: "Heavy Duty" },
     ],
   },
   {
@@ -52,6 +63,11 @@ export const MODELS: ModelConfig[] = [
       "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=1200",
       "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=1200"
     ],
+    specs: [
+      { label: "Design", value: "Tilt-Up Access" },
+      { label: "Frame Color", value: "White" },
+      { label: "Protection", value: "Weather & UV" },
+    ],
   },
   {
     id: "helios",
@@ -66,6 +82,11 @@ export const MODELS: ModelConfig[] = [
       "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=1200",
       "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=1200"
     ],
+    specs: [
+      { label: "Setup", value: "Hot Tub & Lounge" },
+      { label: "Enclosure", value: "Dual Glass Zones" },
+      { label: "Accent", value: "Wood Paneling" },
+    ],
   },
   {
     id: "draco",
@@ -78,6 +99,11 @@ export const MODELS: ModelConfig[] = [
     irlImages: [
       "/card-img-5-low.jpg",
       "https://images.unsplash.com/photo-1576013551627-11971f366114?auto=format&fit=crop&q=80&w=1200"
+    ],
+    specs: [
+      { label: "Shape", value: "Rotatable Dome" },
+      { label: "Visibility", value: "360° Panoramic" },
+      { label: "Wind Shield", value: "Included" },
     ],
   },
   {
@@ -92,6 +118,11 @@ export const MODELS: ModelConfig[] = [
       "/card-img-6-low.jpg",
       "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=1200"
     ],
+    specs: [
+      { label: "Style", value: "Telescopic Sunroom" },
+      { label: "Application", value: "Outdoor Dining" },
+      { label: "Glazing", value: "High Clear Glass" },
+    ],
   },
   {
     id: "borealis",
@@ -105,6 +136,11 @@ export const MODELS: ModelConfig[] = [
       "/card-img-7-low.jpg",
       "https://images.unsplash.com/photo-1540544660406-6a69dacb2804?auto=format&fit=crop&q=80&w=1200"
     ],
+    specs: [
+      { label: "Profile", value: "Ultra-Low" },
+      { label: "Aesthetic", value: "Minimalist Gray" },
+      { label: "Key Feature", value: "Child Safety" },
+    ],
   },
   {
     id: "galaxisis",
@@ -117,6 +153,11 @@ export const MODELS: ModelConfig[] = [
     irlImages: [
       "/card-img-8-low.jpg",
       "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=1200"
+    ],
+    specs: [
+      { label: "Roof Type", value: "Gabled" },
+      { label: "Frame", value: "Black Aluminum" },
+      { label: "Internal Height", value: "Standing Room" },
     ],
   },
 ];

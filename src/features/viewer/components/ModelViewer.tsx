@@ -621,6 +621,7 @@ export default function ModelViewer({
   const [playing, setPlaying] = useState(false);
   const [reversed, setReversed] = useState(false);
   const [variantIdx, setVariantIdx] = useState(0);
+  const [hasInteracted, setHasInteracted] = useState(false);
   const [frame, setFrame] = useState<FrameData>({
     height: 2,
     radius: 1,
@@ -813,7 +814,30 @@ export default function ModelViewer({
       </header>
 
       <aside className="absolute bottom-4 left-4 z-20 sm:bottom-5 sm:left-5 lg:bottom-6 lg:left-7">
-        <div className="pointer-events-auto w-full rounded-2xl border border-white/8 bg-slate-950/65 p-3.5 shadow-[0_16px_48px_rgba(2,6,23,0.5)] backdrop-blur-xl sm:w-72 sm:p-4">
+        <div className="pointer-events-auto w-full max-h-[calc(100vh-8rem)] overflow-y-auto no-scrollbar rounded-2xl border border-white/8 bg-slate-950/65 p-3.5 shadow-[0_16px_48px_rgba(2,6,23,0.5)] backdrop-blur-xl sm:w-72 sm:p-4">
+
+          {model.description && (
+            <p className="mb-4 text-xs leading-relaxed text-slate-300">
+              {model.description}
+            </p>
+          )}
+
+          {model.specs && model.specs.length > 0 && (
+            <div className="mb-5 rounded-xl border border-white/5 bg-white/5 p-3">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                Specifications
+              </p>
+              <div className="grid gap-2">
+                {model.specs.map((s, i) => (
+                  <div key={i} className="flex justify-between text-xs">
+                    <span className="text-slate-400">{s.label}</span>
+                    <span className="font-medium text-slate-200">{s.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {model.variants.length > 1 && (
             <div className="mb-4">
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-600">
