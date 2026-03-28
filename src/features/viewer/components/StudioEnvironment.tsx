@@ -11,9 +11,9 @@ export default function StudioEnvironment({
     <Environment
       resolution={256}      // 256 is indistinguishable from 512 for env reflections
       frames={1}            // bake once — lightformers are all static
-      environmentIntensity={intensity * 0.45}
+      environmentIntensity={intensity * 0.75}
     >
-      <color attach="background" args={["#060b16"]} />
+      <color attach="background" args={["#f1f5f9"]} />
 
       <Lightformer form="ring" color="#f0f4f8" intensity={0.5} scale={7}
         position={[0, 5, -4]} target={[0, 0, 0]} />

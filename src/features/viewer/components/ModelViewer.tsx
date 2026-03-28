@@ -475,11 +475,11 @@ function CementFloor() {
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]} receiveShadow>
       <planeGeometry args={[20, 20]} />
       <meshPhysicalMaterial
-        color="#080808"
-        metalness={0}
-        roughness={1}
-        reflectivity={0}
-        envMapIntensity={0}
+        color="#cbd5e1"
+        metalness={0.05}
+        roughness={0.7}
+        reflectivity={0.2}
+        envMapIntensity={0.6}
       />
     </mesh>
   );
@@ -617,8 +617,8 @@ export default function ModelViewer({
         <AdaptiveDpr pixelated />
         <AdaptiveEvents />
 
-        <color attach="background" args={["#050a14"]} />
-        <fog attach="fog" args={["#060c1a", 16, 32]} />
+        <color attach="background" args={["#f1f5f9"]} />
+        <fog attach="fog" args={["#f1f5f9", 16, 32]} />
 
         <PerspectiveCamera
           ref={camRef}
@@ -629,8 +629,8 @@ export default function ModelViewer({
         />
 
         {/* ── Scene lights ── */}
-        <ambientLight intensity={0.12} />
-        <hemisphereLight args={["#8fb4d4", "#04101f", 0.5]} />
+        <ambientLight intensity={0.4} />
+        <hemisphereLight args={["#ffffff", "#94a3b8", 0.6]} />
 
         {/* PERF: Reduced shadow map resolution from 1024 to 512 — 4× fewer texels */}
         <spotLight
@@ -701,7 +701,7 @@ export default function ModelViewer({
           far={6}
           resolution={128}        // PERF: halved from 256 — still looks fine at this scale
           frames={1}
-          color="#010510"
+          color="#64748b"
         />
 
         <OrbitControls
