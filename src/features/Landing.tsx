@@ -243,7 +243,7 @@ const Landing: React.FC = () => {
       <div className="landing-container">
         <nav>
           <Copy><p id="logo">3D</p></Copy>
-          <Copy><p>Menu</p></Copy>
+          <Copy><p>Architecture</p></Copy>
         </nav>
 
         <div className="hero-img">
