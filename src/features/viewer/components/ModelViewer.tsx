@@ -1,4 +1,5 @@
 import {
+  memo,
   Suspense,
   useCallback,
   useEffect,
@@ -10,25 +11,28 @@ import {
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import type { ThreeEvent } from "@react-three/fiber";
 import {
-  ContactShadows,
   OrbitControls,
   Html,
   PerspectiveCamera,
   useProgress,
   useGLTF,
   useAnimations,
-  AdaptiveDpr,
-  AdaptiveEvents,
 } from "@react-three/drei";
-import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
-import { BlendFunction } from "postprocessing";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
-import type { ModelConfig } from "../data/models";
+import type {
+  MaterialFinish,
+  ModelConfig,
+  ModelMetalTextureTargets,
+  ModelTextureOption,
+} from "../data/models";
+import { DEFAULT_VIEWER_ENVIRONMENT_URL } from "../data/models";
 import { prepareModelScene } from "../utils/modelScene";
 import StudioEnvironment from "./StudioEnvironment";
 import { useNavigate } from "@tanstack/react-router";
 import { ROUTES } from "../../../routes/routerPaths";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type FrameData = {
   height: number;
@@ -513,8 +517,304 @@ function makeReflective(root: THREE.Object3D) {
   });
 }
 
-function AnimatedModel({
+function restoreBaseMaterial(
+  material: PreparedMaterial,
+  snapshots: WeakMap<THREE.Material, MaterialSnapshot>,
+) {
+  const s = snapshots.get(material);
+  if (!s) return;
+  material.color.set(s.color);
+  material.map = s.map;
+  material.roughnessMap = s.roughnessMap;
+  material.metalnessMap = s.metalnessMap;
+  material.normalMap = s.normalMap;
+  material.bumpMap = s.bumpMap;
+  material.bumpScale = s.bumpScale;
+  material.normalScale.copy(s.normalScale);
+  material.metalness = s.metalness;
+  material.roughness = s.roughness;
+  material.reflectivity = s.reflectivity;
+  material.envMapIntensity = s.envMapIntensity;
+  material.clearcoat = s.clearcoat;
+  material.clearcoatRoughness = s.clearcoatRoughness;
+  material.transmission = s.transmission;
+  material.opacity = s.opacity;
+  material.transparent = s.transparent;
+  material.side = s.side;
+  material.needsUpdate = true;
+}
+
+function getMeshSize(
+  mesh: THREE.Mesh,
+  cache: WeakMap<THREE.Mesh, THREE.Vector3>,
+): THREE.Vector3 {
+  let size = cache.get(mesh);
+  if (!size) {
+    size = new THREE.Box3().setFromObject(mesh).getSize(new THREE.Vector3());
+    cache.set(mesh, size);
+  }
+  return size;
+}
+
+function isLineLikeSurface(
+  mesh: THREE.Mesh,
+  material: THREE.Material & Partial<THREE.MeshStandardMaterial>,
+) {
+  return [mesh.name, mesh.parent?.name ?? "", material.name ?? ""]
+    .map((n) => n.toLowerCase())
+    .some((n) => /line|wire|trim|plane|rectangle/.test(n));
+}
+
+function getNamePrefix(name?: string) {
+  return name?.replace(/[0-9_-].*$/, "") ?? "";
+}
+
+function matchesPrefix(name: string | undefined, prefixes?: string[]) {
+  if (!name || !prefixes?.length) return false;
+  const lower = name.toLowerCase();
+  return prefixes.some((prefix) => lower.startsWith(prefix.toLowerCase()));
+}
+
+function matchesMetalTextureTargets(
+  mesh: THREE.Mesh,
+  material: THREE.Material & Partial<THREE.MeshStandardMaterial>,
+  targets?: ModelMetalTextureTargets,
+) {
+  if (!targets) return true;
+
+  const nodeNames = [mesh.name, mesh.parent?.name];
+  const materialName =
+    (material.userData?.originalMaterialName as string | undefined) ??
+    material.name ??
+    "";
+
+  if (
+    targets.excludedNodePrefixes?.length &&
+    nodeNames.some((name) =>
+      matchesPrefix(getNamePrefix(name), targets.excludedNodePrefixes),
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    targets.nodePrefixes?.length &&
+    !nodeNames.some((name) =>
+      matchesPrefix(getNamePrefix(name), targets.nodePrefixes),
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    targets.materialNames?.length &&
+    !targets.materialNames.includes(materialName)
+  ) {
+    return false;
+  }
+
+  if (
+    targets.materialNameIncludes?.length &&
+    !targets.materialNameIncludes.some((needle) => materialName.includes(needle))
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+function isThinProfile(
+  mesh: THREE.Mesh,
+  cache: WeakMap<THREE.Mesh, THREE.Vector3>,
+) {
+  const size = getMeshSize(mesh, cache);
+  const [smallest, middle, largest] = [size.x, size.y, size.z].sort(
+    (a, b) => a - b,
+  );
+  const longToMiddle = largest / Math.max(middle, 0.0001);
+  const middleToSmallest = middle / Math.max(smallest, 0.0001);
+  return (
+    (largest > 0.16 && middle < 0.08 && smallest < 0.05) ||
+    (largest > 0.12 &&
+      longToMiddle > 9 &&
+      middleToSmallest > 1.6 &&
+      middle < 0.08) ||
+    (largest > 0.18 && longToMiddle > 6.5 && middleToSmallest < 4.5) ||
+    (largest > 0.18 && longToMiddle > 12 && middle < 0.12)
+  );
+}
+
+function isGenericMetalCandidate(
+  mesh: THREE.Mesh,
+  material: THREE.Material & Partial<THREE.MeshStandardMaterial>,
+  cache: WeakMap<THREE.Mesh, THREE.Vector3>,
+) {
+  if (isLineLikeSurface(mesh, material) || isThinProfile(mesh, cache))
+    return false;
+  const names = [mesh.name, mesh.parent?.name ?? "", material.name ?? ""].map(
+    (n) => n.toLowerCase(),
+  );
+  if (names.some((n) => /box|shape|sub|cube|circle|frame/.test(n))) return true;
+  const size = getMeshSize(mesh, cache);
+  const dims = [size.x, size.y, size.z].sort((a, b) => a - b);
+  return dims[2] > 0.16 && dims[1] > 0.035;
+}
+
+function applyFinishOverrides(
+  material: PreparedMaterial,
+  finish: MaterialFinish,
+  textureCache: Map<string, THREE.Texture>,
+) {
+  if (finish.mapUrl) {
+    material.map = getCachedTexture(
+      textureCache,
+      finish.mapUrl,
+      finish.repeat,
+      true,
+    );
+    if (!finish.color) material.color.set("#ffffff");
+  }
+  if (finish.roughnessMapUrl)
+    material.roughnessMap = getCachedTexture(
+      textureCache,
+      finish.roughnessMapUrl,
+      finish.repeat,
+    );
+  if (finish.metalnessMapUrl)
+    material.metalnessMap = getCachedTexture(
+      textureCache,
+      finish.metalnessMapUrl,
+      finish.repeat,
+    );
+  if (finish.normalMapUrl) {
+    material.normalMap = getCachedTexture(
+      textureCache,
+      finish.normalMapUrl,
+      finish.repeat,
+    );
+    if (Array.isArray(finish.normalScale))
+      material.normalScale.set(finish.normalScale[0], finish.normalScale[1]);
+    else if (typeof finish.normalScale === "number")
+      material.normalScale.setScalar(finish.normalScale);
+  }
+  if (finish.bumpMapUrl)
+    material.bumpMap = getCachedTexture(
+      textureCache,
+      finish.bumpMapUrl,
+      finish.repeat,
+    );
+  if (finish.bumpScale !== undefined) material.bumpScale = finish.bumpScale;
+  if (finish.color) material.color.set(finish.color);
+  if (finish.metalness !== undefined) material.metalness = finish.metalness;
+  if (finish.roughness !== undefined) material.roughness = finish.roughness;
+  if (finish.reflectivity !== undefined)
+    material.reflectivity = finish.reflectivity;
+  if (finish.envMapIntensity !== undefined)
+    material.envMapIntensity = finish.envMapIntensity;
+  if (finish.clearcoat !== undefined) material.clearcoat = finish.clearcoat;
+  if (finish.clearcoatRoughness !== undefined)
+    material.clearcoatRoughness = finish.clearcoatRoughness;
+  if (finish.transmission !== undefined)
+    material.transmission = finish.transmission;
+  if (finish.opacity !== undefined) material.opacity = finish.opacity;
+  material.transparent =
+    finish.opacity !== undefined
+      ? finish.opacity < 1 || material.transmission > 0
+      : material.transparent;
+  material.needsUpdate = true;
+}
+
+function applyTextureOptions(
+  root: THREE.Object3D,
+  textures: SurfaceTextureSelection[],
+) {
+  const { materialSnapshots, meshSizeCache, textureCache } =
+    getSceneCaches(root);
+
+  // Single pass: restore then apply
+  root.traverse((child) => {
+    const mesh = child as THREE.Mesh;
+    if (!mesh.isMesh) return;
+
+    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    mats.forEach((mat) => {
+      if (
+        mat instanceof THREE.MeshStandardMaterial ||
+        mat instanceof THREE.MeshPhysicalMaterial
+      ) {
+        restoreBaseMaterial(mat as PreparedMaterial, materialSnapshots);
+      }
+
+      textures.forEach(({ surface, texture, targets }) => {
+        if (!texture?.materials) return;
+        const material = mat as PreparedMaterial;
+        const materialLike =
+          material as THREE.Material & Partial<THREE.MeshStandardMaterial>;
+        const kind =
+          materialSnapshots.get(material)?.kind ??
+          classifyMaterial(mesh, materialLike);
+        const isLineLike = isLineLikeSurface(mesh, materialLike);
+        const isThin = isThinProfile(mesh, meshSizeCache);
+        let finish = texture.materials[kind];
+
+        if (surface === "metal") {
+          const isTargeted = matchesMetalTextureTargets(
+            mesh,
+            materialLike,
+            targets,
+          );
+
+          if (!isTargeted || isLineLike || isThin) {
+            finish = undefined;
+          } else {
+            finish =
+              finish ??
+              texture.materials.metal ??
+              (kind === "generic"
+                ? texture.materials.metal
+                : undefined);
+          }
+        } else if (
+          !finish &&
+          kind === "generic" &&
+          isGenericMetalCandidate(mesh, materialLike, meshSizeCache)
+        ) {
+          finish = texture.materials.generic;
+        }
+
+        if (finish) applyFinishOverrides(material, finish, textureCache);
+      });
+    });
+  });
+}
+
+// ─── CementFloor (stable geometry ref) ───────────────────────────────────────
+
+const floorGeometry = new THREE.PlaneGeometry(20, 20);
+
+const CementFloor = memo(function CementFloor() {
+  return (
+    <mesh
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, -0.001, 0]}
+      geometry={floorGeometry}
+    >
+      <meshPhysicalMaterial
+        color="#111827"
+        metalness={0.05}
+        roughness={0.9}
+        reflectivity={0.06}
+        envMapIntensity={0.18}
+      />
+    </mesh>
+  );
+});
+
+// ─── AnimatedModel ────────────────────────────────────────────────────────────
+
+const AnimatedModel = memo(function AnimatedModel({
   glbPath,
+  textures,
   wireframe,
   playing,
   reversed,
@@ -522,6 +822,7 @@ function AnimatedModel({
   onPrepared,
 }: {
   glbPath: string;
+  textures: SurfaceTextureSelection[];
   wireframe: boolean;
   playing: boolean;
   reversed: boolean;
@@ -530,13 +831,13 @@ function AnimatedModel({
 }) {
   const group = useRef<THREE.Group>(null);
   const { scene, animations } = useGLTF(glbPath);
-  const prepared = useMemo(() => prepareModelScene(scene, 3.5), [scene]);
+  const prepared = useMemo(() => {
+    const next = prepareModelScene(scene, 3.5);
+    makeReflective(next.root);
+    return next;
+  }, [scene]);
   const { actions, names } = useAnimations(animations, group);
   const finishedRef = useRef(false);
-
-  useEffect(() => {
-    makeReflective(prepared.root);
-  }, [prepared.root]);
 
   useEffect(() => {
     onPrepared({
@@ -548,10 +849,16 @@ function AnimatedModel({
   }, [onPrepared, prepared]);
 
   useEffect(() => {
+    applyTextureOptions(prepared.root, textures);
+  }, [prepared.root, textures]);
+
+  useEffect(() => {
     prepared.root.traverse((child) => {
       const mesh = child as THREE.Mesh;
       if (!mesh.isMesh) return;
-      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      const mats = Array.isArray(mesh.material)
+        ? mesh.material
+        : [mesh.material];
       mats.forEach((mat) => {
         const m = mat as THREE.MeshStandardMaterial;
         if (m.wireframe !== undefined) m.wireframe = wireframe;
@@ -562,13 +869,11 @@ function AnimatedModel({
   useEffect(() => {
     if (!names.length) return;
     finishedRef.current = false;
-
     names.forEach((name) => {
       const action = actions[name];
       if (!action) return;
       action.setLoop(THREE.LoopOnce, 1);
       action.clampWhenFinished = true;
-
       if (playing) {
         action.timeScale = reversed ? -1 : 1;
         if (reversed && action.time <= 0.001)
@@ -583,7 +888,6 @@ function AnimatedModel({
     });
   }, [playing, reversed, actions, names, glbPath]);
 
-  // PERF: Skip useFrame work entirely when not playing
   useFrame(() => {
     if (!playing || !names.length || finishedRef.current) return;
     const allDone = names.every((name) => {
@@ -612,7 +916,9 @@ function AnimatedModel({
       />
     </group>
   );
-}
+});
+
+// ─── AutoFrameCamera ──────────────────────────────────────────────────────────
 
 function AutoFrameCamera({
   frame,
@@ -633,13 +939,13 @@ function AutoFrameCamera({
     const aspect = Math.max(size.width / Math.max(size.height, 1), 0.01);
     const vFov = THREE.MathUtils.degToRad(cam.fov);
     const hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
-
     const halfHeight = Math.max(frame.height * 0.5, 0.35);
     const halfWidth = Math.max(frame.radius, 0.35);
-    const distForHeight = halfHeight / Math.tan(vFov / 2);
-    const distForWidth = halfWidth / Math.tan(hFov / 2);
-
-    const fitDistance = Math.max(distForHeight, distForWidth) * 1.9;
+    const fitDistance =
+      Math.max(
+        halfHeight / Math.tan(vFov / 2),
+        halfWidth / Math.tan(hFov / 2),
+      ) * 1.9;
     const targetY = Math.max(0.35, frame.centerY);
     const cameraY = targetY + Math.max(0.35, frame.height * 0.08);
 
@@ -649,11 +955,9 @@ function AutoFrameCamera({
     cam.updateProjectionMatrix();
 
     const minDistance = Math.max(0.25, frame.radius * 0.22, fitDistance * 0.12);
-    const maxDistance = Math.max(minDistance + 2, fitDistance * 5.5);
-
     controls.target.set(0, targetY, 0);
     controls.minDistance = minDistance;
-    controls.maxDistance = maxDistance;
+    controls.maxDistance = Math.max(minDistance + 2, fitDistance * 5.5);
     controls.update();
     controls.saveState();
   }, [camRef, controlsRef, frame, size.height, size.width]);
@@ -661,88 +965,15 @@ function AutoFrameCamera({
   return null;
 }
 
-// PERF: Reduced Bloom intensity + disabled mipmapBlur (saves 1-2 render passes).
-//       Vignette is nearly free so kept as-is.
-function PostFX() {
-  return (
-    <EffectComposer multisampling={0} disableNormalPass>
-      <Bloom
-        intensity={0.12}
-        luminanceThreshold={0.95}
-        luminanceSmoothing={0.4}
-        // mipmapBlur removed — saves a full downsample/upsample chain every frame
-        blendFunction={BlendFunction.SCREEN}
-      />
-      <Vignette
-        offset={0.38}
-        darkness={0.38}
-        blendFunction={BlendFunction.NORMAL}
-      />
-    </EffectComposer>
-  );
-}
+// ─── Shared button style helpers ──────────────────────────────────────────────
 
-// PERF: Reduced floor plane from 60×60 to 20×20 — fewer fragments to shade,
-//       especially relevant with ACES tonemapping active.
-function CementFloor() {
-  return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]} receiveShadow>
-      <planeGeometry args={[20, 20]} />
-      <meshPhysicalMaterial
-        color="#cbd5e1"
-        metalness={0.05}
-        roughness={0.7}
-        reflectivity={0.2}
-        envMapIntensity={0.6}
-      />
-    </mesh>
-  );
-}
-
-function PlayIcon() {
-  return (
-    <svg className="h-3.5 w-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-      <path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-    </svg>
-  );
-}
-function PauseIcon() {
-  return (
-    <svg className="h-3.5 w-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-      <path fillRule="evenodd" d="M6 4a1 1 0 00-1 1v10a1 1 0 102 0V5a1 1 0 00-1-1zm8 0a1 1 0 00-1 1v10a1 1 0 102 0V5a1 1 0 00-1-1z" clipRule="evenodd" />
-    </svg>
-  );
-}
-function RewindIcon() {
-  return (
-    <svg className="h-3.5 w-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-      <path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z" />
-    </svg>
-  );
-}
-function RotateIcon() {
-  return (
-    <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-    </svg>
-  );
-}
-function WireframeIcon() {
-  return (
-    <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 3l9 5.5-9 5.5-9-5.5L12 3zm0 0v11m9-5.5v5.5L12 20l-9-5.5V9" />
-    </svg>
-  );
-}
-function ResetIcon() {
-  return (
-    <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 12a9 9 0 109-9M3 12V7m0 5H8" />
-    </svg>
-  );
-}
+const BTN_BASE =
+  "flex w-full items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-[13px] font-medium tracking-wide transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40";
+const BTN_DEFAULT = `${BTN_BASE} border-white/8 bg-white/4 text-slate-300 hover:border-white/16 hover:bg-white/8 hover:text-white`;
+const BTN_ACTIVE = `${BTN_BASE} border-sky-400/30 bg-sky-400/14 text-sky-300 hover:bg-sky-400/20`;
 
 // ─── Main viewer ──────────────────────────────────────────────────────────────
+
 export default function ModelViewer({
   model,
   onBack,
@@ -753,21 +984,39 @@ export default function ModelViewer({
   const navigate = useNavigate();
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const camRef = useRef<THREE.PerspectiveCamera>(null);
+
   const [autoRotate, setAutoRotate] = useState(true);
   const [wireframe, setWireframe] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [reversed, setReversed] = useState(false);
   const [variantIdx, setVariantIdx] = useState(0);
+  const [metalTextureIdx, setMetalTextureIdx] = useState(0);
+  const [glassTextureIdx, setGlassTextureIdx] = useState(0);
   const [hasInteracted, setHasInteracted] = useState(false);
-  const [frame, setFrame] = useState<FrameData>({
-    height: 2,
-    radius: 1,
-    boundingRadius: 1.35,
-    centerY: 1,
-  });
+  const [frame, setFrame] = useState<FrameData>(DEFAULT_FRAME);
 
   const glbPath = model.variants[variantIdx].glb;
-  const fov = 34;
+  const metalTextures = model.surfaceOptions?.metal ?? EMPTY_TEXTURE_OPTIONS;
+  const glassTextures = model.surfaceOptions?.glass ?? EMPTY_TEXTURE_OPTIONS;
+
+  // Stable reference when indices haven't changed
+  const activeTextures = useMemo<SurfaceTextureSelection[]>(
+    () => [
+      {
+        surface: "metal",
+        texture: metalTextures[metalTextureIdx],
+        targets: model.metalTextureTargets,
+      },
+      { surface: "glass", texture: glassTextures[glassTextureIdx] },
+    ],
+    [
+      glassTextures,
+      glassTextureIdx,
+      metalTextures,
+      metalTextureIdx,
+      model.metalTextureTargets,
+    ],
+  );
 
   const handleAnimationFinish = useCallback(() => {
     setPlaying(false);
@@ -778,6 +1027,9 @@ export default function ModelViewer({
     setFrame(nextFrame);
   }, []);
 
+  const handleMarkInteracted = useCallback(() => setHasInteracted(true), []);
+
+  // Reset animation state when model variant changes
   useEffect(() => {
     const id = setTimeout(() => {
       setPlaying(false);
@@ -786,38 +1038,45 @@ export default function ModelViewer({
     return () => clearTimeout(id);
   }, [glbPath]);
 
-  function resetCamera() {
-    controlsRef.current?.reset();
-  }
-
-  const btnBase =
-    "flex w-full items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-[13px] font-medium tracking-wide transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40";
-  const btnDefault = `${btnBase} border-white/8 bg-white/4 text-slate-300 hover:border-white/16 hover:bg-white/8 hover:text-white`;
-  const btnActive = `${btnBase} border-sky-400/30 bg-sky-400/14 text-sky-300 hover:bg-sky-400/20`;
+  const resetCamera = useCallback(() => controlsRef.current?.reset(), []);
 
   return (
     <div
-      className="relative h-screen w-screen overflow-hidden bg-slate-50 text-slate-900"
-      onPointerDown={() => setHasInteracted(true)}
-      onWheel={() => setHasInteracted(true)}
+      className="relative h-screen w-screen overflow-hidden bg-slate-950 text-slate-100"
+      onPointerDown={handleMarkInteracted}
+      onWheel={handleMarkInteracted}
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(56,189,248,0.07),transparent)]" />
+      {/* Ambient gradient */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(56,189,248,0.08),transparent)]" />
 
+      {/* Interaction hint */}
       <div
         className={`pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center transition-opacity duration-1000 ${
           hasInteracted ? "opacity-0" : "opacity-100"
         }`}
       >
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-white/10 bg-slate-950/40 px-6 py-5 shadow-2xl backdrop-blur-md">
-          <svg className="h-8 w-8 animate-bounce text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+          <svg
+            className="h-8 w-8 animate-bounce text-white/80"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"
+            />
           </svg>
-          <span className="text-xs font-semibold tracking-[0.1em] text-white/90 uppercase">Click & Drag to Interact</span>
+          <span className="text-xs font-semibold tracking-[0.1em] text-white/90 uppercase">
+            Click &amp; Drag to Interact
+          </span>
         </div>
       </div>
 
+      {/* Three.js canvas */}
       <Canvas
-        shadows="soft"        // PERF: "soft" uses PCF soft shadows vs default VSM — cheaper
         className="h-full w-full"
         gl={{
           antialias: false,
@@ -825,56 +1084,41 @@ export default function ModelViewer({
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 0.9,
         }}
-        dpr={[1, 1.2]}        // PERF: cap at 1.2 instead of 1.5 — ~36% fewer pixels on retina
-        frameloop="demand"    // PERF: only render when something changes (orbit, animation, etc.)
+        dpr={1}
+        frameloop="demand"
       >
-        <AdaptiveDpr pixelated />
-        <AdaptiveEvents />
-
-        <color attach="background" args={["#f1f5f9"]} />
-        <fog attach="fog" args={["#f1f5f9", 16, 32]} />
+        <color attach="background" args={["#0b1220"]} />
 
         <PerspectiveCamera
           ref={camRef}
           makeDefault
           position={[0, 2, 8]}
-          fov={fov}
+          fov={34}
           near={0.02}
         />
 
-        {/* ── Scene lights ── */}
         <ambientLight intensity={0.4} />
         <hemisphereLight args={["#ffffff", "#94a3b8", 0.6]} />
-
-        {/* PERF: Reduced shadow map resolution from 1024 to 512 — 4× fewer texels */}
         <spotLight
-          castShadow
           position={[4, 10, 5]}
-          intensity={28}
+          intensity={18}
           angle={0.26}
-          penumbra={0.65}
+          penumbra={0.5}
           distance={30}
-          shadow-mapSize={[512, 512]}
-          shadow-bias={-0.0001}
-          shadow-normalBias={0.02}
         />
-
-        {/* PERF: Removed castShadow from fill/accent lights — only key light needs it */}
         <spotLight
           position={[-5, 4.5, -8]}
-          intensity={8}
+          intensity={5}
           angle={0.42}
-          penumbra={0.85}
+          penumbra={0.7}
           distance={25}
           color={model.accent}
         />
-
         <directionalLight
           position={[6, 3, -6]}
           intensity={0.9}
           color="#dbeafe"
         />
-
         <pointLight
           position={[0, 1.5, 5]}
           intensity={5}
@@ -882,11 +1126,16 @@ export default function ModelViewer({
           color={model.accent}
         />
 
-        <StudioEnvironment accent={model.accent} intensity={1.0} />
+        <StudioEnvironment
+          accent={model.accent}
+          intensity={1.0}
+          environmentMapUrl={DEFAULT_VIEWER_ENVIRONMENT_URL}
+        />
 
         <Suspense key={glbPath} fallback={<Loader />}>
           <AnimatedModel
             glbPath={glbPath}
+            textures={activeTextures}
             wireframe={wireframe}
             playing={playing}
             reversed={reversed}
@@ -900,23 +1149,7 @@ export default function ModelViewer({
           controlsRef={controlsRef}
           camRef={camRef}
         />
-
         <CementFloor />
-
-        {/* PERF: frames={1} always — re-bake only when explicitly needed.
-            The shadow is baked once and reused, which is correct for a
-            static or slowly-rotating model. Pass frames={playing ? 4 : 1}
-            if you need it to update during animation playback. */}
-        <ContactShadows
-          position={[0, 0, 0]}
-          scale={10}              // reduced from 14
-          opacity={0.5}
-          blur={2}
-          far={6}
-          resolution={128}        // PERF: halved from 256 — still looks fine at this scale
-          frames={1}
-          color="#64748b"
-        />
 
         <OrbitControls
           ref={controlsRef}
@@ -929,17 +1162,16 @@ export default function ModelViewer({
           maxPolarAngle={Math.PI / 1.75}
           target={[0, 1, 0]}
           makeDefault
-          // PERF: regress DPR during interaction, restore after
           regress
         />
-
-        <PostFX />
       </Canvas>
 
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_100%_100%_at_50%_50%,transparent_55%,rgba(241,245,249,0.85)_100%)]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-[rgba(241,245,249,0.8)] to-transparent" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[rgba(241,245,249,0.95)] to-transparent" />
+      {/* Edge vignettes */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_100%_100%_at_50%_50%,transparent_48%,rgba(2,6,23,0.72)_100%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-[rgba(2,6,23,0.76)] to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[rgba(2,6,23,0.92)] to-transparent" />
 
+      {/* Header */}
       <header className="absolute inset-x-0 top-0 z-20 px-4 pt-4 sm:px-6 lg:px-8 lg:pt-5">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 rounded-2xl border border-white/8 bg-slate-950/55 px-3 py-2.5 shadow-[0_8px_32px_rgba(2,6,23,0.4)] backdrop-blur-xl sm:px-4 lg:px-5">
           <div className="flex min-w-0 items-center gap-3">
