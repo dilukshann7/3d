@@ -27,6 +27,8 @@ import * as THREE from "three";
 import type { ModelConfig } from "../data/models";
 import { prepareModelScene } from "../utils/modelScene";
 import StudioEnvironment from "./StudioEnvironment";
+import { useNavigate } from "@tanstack/react-router";
+import { ROUTES } from "../../../routes/routerPaths";
 
 type FrameData = {
   height: number;
@@ -454,7 +456,7 @@ function AutoFrameCamera({
     const distForHeight = halfHeight / Math.tan(vFov / 2);
     const distForWidth = halfWidth / Math.tan(hFov / 2);
 
-    const fitDistance = Math.max(distForHeight, distForWidth) * 1.5;
+    const fitDistance = Math.max(distForHeight, distForWidth) * 1.9;
     const targetY = Math.max(0.35, frame.centerY);
     const cameraY = targetY + Math.max(0.35, frame.height * 0.08);
 
@@ -611,6 +613,7 @@ export default function ModelViewer({
   model: ModelConfig;
   onBack: () => void;
 }) {
+  const navigate = useNavigate();
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const camRef = useRef<THREE.PerspectiveCamera>(null);
   const [autoRotate, setAutoRotate] = useState(true);
@@ -872,6 +875,27 @@ export default function ModelViewer({
             <button onClick={resetCamera} className={btnDefault}>
               <ResetIcon /> Reset view
             </button>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-2">
+            <button
+              onClick={() => navigate({ to: ROUTES.galleryById, params: { modelId: model.id } })}
+              className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-sky-400/30 bg-sky-400/10 px-3.5 py-3 text-[13px] font-semibold tracking-wide text-sky-300 transition duration-200 hover:bg-sky-400/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              View gallery
+            </button>
+            <a
+              href="mailto:contact@example.com?subject=Build My 3D Website"
+              className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-3.5 py-3 text-[13px] font-semibold tracking-wide text-emerald-300 transition duration-200 hover:bg-emerald-400/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              </svg>
+              Make your own 3d website
+            </a>
           </div>
 
           <div

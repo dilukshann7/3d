@@ -7,6 +7,7 @@ export type ModelConfig = {
   image: string;
   accent: string;
   variants: ModelVariant[];
+  irlImages?: string[];
 };
 
 export const MODELS: ModelConfig[] = [
@@ -18,6 +19,11 @@ export const MODELS: ModelConfig[] = [
     image: "/card-img-1-low.jpg",
     accent: "#0f172a",
     variants: [{ label: "Standard", glb: "/abris.glb" }],
+    irlImages: [
+      "/card-img-1-low.jpg",
+      "https://images.unsplash.com/photo-1576013551627-11971f366114?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=1200"
+    ],
   },
   {
     id: "moon",
@@ -27,6 +33,11 @@ export const MODELS: ModelConfig[] = [
     image: "/card-img-2-low.jpg",
     accent: "#78350f",
     variants: [{ label: "Standard", glb: "/moon.glb" }],
+    irlImages: [
+      "/card-img-2-low.jpg",
+      "https://images.unsplash.com/photo-1540544660406-6a69dacb2804?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=1200",
+    ],
   },
   {
     id: "antares",
@@ -36,6 +47,11 @@ export const MODELS: ModelConfig[] = [
     image: "/card-img-3-low.jpg",
     accent: "#475569",
     variants: [{ label: "Standard", glb: "/antares.glb" }],
+    irlImages: [
+      "/card-img-3-low.jpg",
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=1200"
+    ],
   },
   {
     id: "helios",
@@ -45,6 +61,11 @@ export const MODELS: ModelConfig[] = [
     image: "/card-img-4-low.jpg",
     accent: "#475569",
     variants: [{ label: "Standard", glb: "/helios.glb" }],
+    irlImages: [
+      "/card-img-4-low.jpg",
+      "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=1200"
+    ],
   },
   {
     id: "draco",
@@ -54,6 +75,10 @@ export const MODELS: ModelConfig[] = [
     image: "/card-img-5-low.jpg",
     accent: "#334155",
     variants: [{ label: "Standard", glb: "/draco.glb" }],
+    irlImages: [
+      "/card-img-5-low.jpg",
+      "https://images.unsplash.com/photo-1576013551627-11971f366114?auto=format&fit=crop&q=80&w=1200"
+    ],
   },
   {
     id: "andromeda",
@@ -63,6 +88,10 @@ export const MODELS: ModelConfig[] = [
     image: "/card-img-6-low.jpg",
     accent: "#0ea5e9",
     variants: [{ label: "Standard", glb: "/andromeda.glb" }],
+    irlImages: [
+      "/card-img-6-low.jpg",
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=1200"
+    ],
   },
   {
     id: "borealis",
@@ -72,6 +101,10 @@ export const MODELS: ModelConfig[] = [
     image: "/card-img-7-low.jpg",
     accent: "#2563eb",
     variants: [{ label: "Standard", glb: "/borealis.glb" }],
+    irlImages: [
+      "/card-img-7-low.jpg",
+      "https://images.unsplash.com/photo-1540544660406-6a69dacb2804?auto=format&fit=crop&q=80&w=1200"
+    ],
   },
   {
     id: "galaxisis",
@@ -81,5 +114,9 @@ export const MODELS: ModelConfig[] = [
     image: "/card-img-8-low.jpg",
     accent: "#14b8a6",
     variants: [{ label: "Standard", glb: "/galaxisis.glb" }],
+    irlImages: [
+      "/card-img-8-low.jpg",
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=1200"
+    ],
   },
 ];

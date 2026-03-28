@@ -375,7 +375,6 @@ export default function Hero() {
                       className="card-btn"
                       to="/viewer/$modelId"
                       params={{ modelId: card.modelId }}
-                      target="_blank"
                     >
                       Explore Design
                     </Link>

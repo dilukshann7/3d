@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ViewerIndexRouteImport } from './routes/viewer.index'
 import { Route as ViewerModelIdRouteImport } from './routes/viewer.$modelId'
+import { Route as GalleryModelIdRouteImport } from './routes/gallery.$modelId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,33 +29,42 @@ const ViewerModelIdRoute = ViewerModelIdRouteImport.update({
   path: '/viewer/$modelId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GalleryModelIdRoute = GalleryModelIdRouteImport.update({
+  id: '/gallery/$modelId',
+  path: '/gallery/$modelId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/gallery/$modelId': typeof GalleryModelIdRoute
   '/viewer/$modelId': typeof ViewerModelIdRoute
   '/viewer/': typeof ViewerIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/gallery/$modelId': typeof GalleryModelIdRoute
   '/viewer/$modelId': typeof ViewerModelIdRoute
   '/viewer': typeof ViewerIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/gallery/$modelId': typeof GalleryModelIdRoute
   '/viewer/$modelId': typeof ViewerModelIdRoute
   '/viewer/': typeof ViewerIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/viewer/$modelId' | '/viewer/'
+  fullPaths: '/' | '/gallery/$modelId' | '/viewer/$modelId' | '/viewer/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/viewer/$modelId' | '/viewer'
-  id: '__root__' | '/' | '/viewer/$modelId' | '/viewer/'
+  to: '/' | '/gallery/$modelId' | '/viewer/$modelId' | '/viewer'
+  id: '__root__' | '/' | '/gallery/$modelId' | '/viewer/$modelId' | '/viewer/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  GalleryModelIdRoute: typeof GalleryModelIdRoute
   ViewerModelIdRoute: typeof ViewerModelIdRoute
   ViewerIndexRoute: typeof ViewerIndexRoute
 }
@@ -82,11 +92,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ViewerModelIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/gallery/$modelId': {
+      id: '/gallery/$modelId'
+      path: '/gallery/$modelId'
+      fullPath: '/gallery/$modelId'
+      preLoaderRoute: typeof GalleryModelIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  GalleryModelIdRoute: GalleryModelIdRoute,
   ViewerModelIdRoute: ViewerModelIdRoute,
   ViewerIndexRoute: ViewerIndexRoute,
 }
