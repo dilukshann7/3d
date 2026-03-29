@@ -8,97 +8,97 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as ViewerIndexRouteImport } from './routes/viewer.index'
-import { Route as ViewerModelIdRouteImport } from './routes/viewer.$modelId'
-import { Route as GalleryModelIdRouteImport } from './routes/gallery.$modelId'
+import { Route as rootRouteImport } from "./routes/__root";
+import { Route as IndexRouteImport } from "./routes/index";
+import { Route as ViewerIndexRouteImport } from "./routes/viewer.index";
+import { Route as ViewerModelIdRouteImport } from "./routes/viewer.$modelId";
+import { Route as GalleryModelIdRouteImport } from "./routes/gallery.$modelId";
 
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ViewerIndexRoute = ViewerIndexRouteImport.update({
-  id: '/viewer/',
-  path: '/viewer/',
+  id: "/viewer/",
+  path: "/viewer/",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ViewerModelIdRoute = ViewerModelIdRouteImport.update({
-  id: '/viewer/$modelId',
-  path: '/viewer/$modelId',
+  id: "/viewer/$modelId",
+  path: "/viewer/$modelId",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const GalleryModelIdRoute = GalleryModelIdRouteImport.update({
-  id: '/gallery/$modelId',
-  path: '/gallery/$modelId',
+  id: "/gallery/$modelId",
+  path: "/gallery/$modelId",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/gallery/$modelId': typeof GalleryModelIdRoute
-  '/viewer/$modelId': typeof ViewerModelIdRoute
-  '/viewer/': typeof ViewerIndexRoute
+  "/": typeof IndexRoute;
+  "/gallery/$modelId": typeof GalleryModelIdRoute;
+  "/viewer/$modelId": typeof ViewerModelIdRoute;
+  "/viewer/": typeof ViewerIndexRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/gallery/$modelId': typeof GalleryModelIdRoute
-  '/viewer/$modelId': typeof ViewerModelIdRoute
-  '/viewer': typeof ViewerIndexRoute
+  "/": typeof IndexRoute;
+  "/gallery/$modelId": typeof GalleryModelIdRoute;
+  "/viewer/$modelId": typeof ViewerModelIdRoute;
+  "/viewer": typeof ViewerIndexRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/gallery/$modelId': typeof GalleryModelIdRoute
-  '/viewer/$modelId': typeof ViewerModelIdRoute
-  '/viewer/': typeof ViewerIndexRoute
+  __root__: typeof rootRouteImport;
+  "/": typeof IndexRoute;
+  "/gallery/$modelId": typeof GalleryModelIdRoute;
+  "/viewer/$modelId": typeof ViewerModelIdRoute;
+  "/viewer/": typeof ViewerIndexRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/gallery/$modelId' | '/viewer/$modelId' | '/viewer/'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/gallery/$modelId' | '/viewer/$modelId' | '/viewer'
-  id: '__root__' | '/' | '/gallery/$modelId' | '/viewer/$modelId' | '/viewer/'
-  fileRoutesById: FileRoutesById
+  fileRoutesByFullPath: FileRoutesByFullPath;
+  fullPaths: "/" | "/gallery/$modelId" | "/viewer/$modelId" | "/viewer/";
+  fileRoutesByTo: FileRoutesByTo;
+  to: "/" | "/gallery/$modelId" | "/viewer/$modelId" | "/viewer";
+  id: "__root__" | "/" | "/gallery/$modelId" | "/viewer/$modelId" | "/viewer/";
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  GalleryModelIdRoute: typeof GalleryModelIdRoute
-  ViewerModelIdRoute: typeof ViewerModelIdRoute
-  ViewerIndexRoute: typeof ViewerIndexRoute
+  IndexRoute: typeof IndexRoute;
+  GalleryModelIdRoute: typeof GalleryModelIdRoute;
+  ViewerModelIdRoute: typeof ViewerModelIdRoute;
+  ViewerIndexRoute: typeof ViewerIndexRoute;
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/viewer/': {
-      id: '/viewer/'
-      path: '/viewer'
-      fullPath: '/viewer/'
-      preLoaderRoute: typeof ViewerIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/viewer/$modelId': {
-      id: '/viewer/$modelId'
-      path: '/viewer/$modelId'
-      fullPath: '/viewer/$modelId'
-      preLoaderRoute: typeof ViewerModelIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/gallery/$modelId': {
-      id: '/gallery/$modelId'
-      path: '/gallery/$modelId'
-      fullPath: '/gallery/$modelId'
-      preLoaderRoute: typeof GalleryModelIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+    "/": {
+      id: "/";
+      path: "/";
+      fullPath: "/";
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/viewer/": {
+      id: "/viewer/";
+      path: "/viewer";
+      fullPath: "/viewer/";
+      preLoaderRoute: typeof ViewerIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/viewer/$modelId": {
+      id: "/viewer/$modelId";
+      path: "/viewer/$modelId";
+      fullPath: "/viewer/$modelId";
+      preLoaderRoute: typeof ViewerModelIdRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/gallery/$modelId": {
+      id: "/gallery/$modelId";
+      path: "/gallery/$modelId";
+      fullPath: "/gallery/$modelId";
+      preLoaderRoute: typeof GalleryModelIdRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
   }
 }
 
@@ -107,7 +107,7 @@ const rootRouteChildren: RootRouteChildren = {
   GalleryModelIdRoute: GalleryModelIdRoute,
   ViewerModelIdRoute: ViewerModelIdRoute,
   ViewerIndexRoute: ViewerIndexRoute,
-}
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();
