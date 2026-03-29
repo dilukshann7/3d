@@ -91,6 +91,36 @@ const SHARED_METAL_TEXTURES: ModelTextureOption[] = [
       },
     },
   },
+  {
+    label: "Tiles 45",
+    swatch: "#8f8572",
+    materials: {
+      metal: {
+        mapUrl: assetUrl("textures/tiles/Tiles045_1K-JPG_Color.jpg"),
+        repeat: [1, 1],
+        color: "#ffffff",
+        metalness: 0.12,
+        roughness: 0.82,
+        reflectivity: 0.08,
+        envMapIntensity: 0.16,
+      },
+    },
+  },
+  {
+    label: "Tiles 108",
+    swatch: "#b5aea1",
+    materials: {
+      metal: {
+        mapUrl: assetUrl("textures/tiles/Tiles108_1K-JPG_Color.jpg"),
+        repeat: [1, 1],
+        color: "#ffffff",
+        metalness: 0.1,
+        roughness: 0.78,
+        reflectivity: 0.1,
+        envMapIntensity: 0.18,
+      },
+    },
+  },
 ];
 
 const SHARED_GLASS_TEXTURES: ModelTextureOption[] = [];
