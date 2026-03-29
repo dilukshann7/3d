@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { MODELS } from "../features/viewer/data/models";
 import ModelViewer from "../features/viewer/components/ModelViewer";
 import { ROUTES } from "./routerPaths";
@@ -10,6 +10,7 @@ export const Route = createFileRoute("/viewer/$modelId")({
 function ViewerPage() {
   const { modelId } = Route.useParams();
   const navigate = useNavigate();
+  const router = useRouter();
   const model = MODELS.find((m) => m.id === modelId);
 
   if (!model) {
@@ -30,7 +31,7 @@ function ViewerPage() {
     <ModelViewer
       key={model.id}
       model={model}
-      onBack={() => navigate({ to: ROUTES.home })}
+      onBack={() => router.history.back()}
     />
   );
 }

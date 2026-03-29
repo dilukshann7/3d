@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link, useRouter } from "@tanstack/react-router";
 import { MODELS } from "../features/viewer/data/models";
 import { ROUTES } from "./routerPaths";
 
@@ -9,6 +9,7 @@ export const Route = createFileRoute("/gallery/$modelId")({
 function GalleryPage() {
   const { modelId } = Route.useParams();
   const navigate = useNavigate();
+  const router = useRouter();
   const model = MODELS.find((m) => m.id === modelId);
 
   if (!model) {
@@ -34,15 +35,14 @@ function GalleryPage() {
       <header className="sticky top-0 z-20 mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8 lg:pt-5">
         <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/8 bg-slate-950/55 px-3 py-2.5 shadow-[0_8px_32px_rgba(2,6,23,0.4)] backdrop-blur-xl sm:px-4 lg:px-5">
           <div className="flex items-center gap-3">
-            <Link
-              to={ROUTES.viewerById}
-              params={{ modelId: model.id }}
+            <button
+              onClick={() => router.history.back()}
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/8 bg-white/5 text-slate-300 transition duration-200 hover:border-white/16 hover:bg-white/10 hover:text-white"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 19l-7-7 7-7" />
               </svg>
-            </Link>
+            </button>
             <div>
               <h1 className="text-[15px] font-semibold tracking-tight text-white sm:text-base">
                 {model.name} Gallery
